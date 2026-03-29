@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-03-29T18:35:00Z",
+  "heartbeat_id": "ceo_20260329_1835",
+  "status": "OPERATIONAL",
+  "agents": {
+    "total": 21,
+    "active": 21,
+    "inactive": 0
+  },
+  "infrastructure": {
+    "main_process": {"pid": 277765, "status": "running"},
+    "telegram_bot": {"pid": 256088, "status": "running"},
+    "database": {"port": 54329, "status": "active"},
+    "openrouter_api": {"status": "responding"}
+  },
+  "projects": {
+    "alvo_platform": {"status": "operational", "incidents": 0},
+    "dashboard": {"backend": "operational", "frontend": "pending"},
+    "compliance": {"status": "pending_content"}
+  },
+  "pending_items": {
+    "dmitry_telegram_messages": 4,
+    "photo_video_tz": "awaiting_requirements",
+    "frontend_skeleton": "awaiting_cto_delivery"
+  },
+  "financial": {
+    "decisions_over_100": 0,
+    "budget_status": "normal"
+  },
+  "next_heartbeat": "2026-03-29T19:35:00Z"
+}

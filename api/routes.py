@@ -400,3 +400,7 @@ app.include_router(failover_router)
 # Import and register secrets router
 from api.secrets import router as secrets_router
 app.include_router(secrets_router)
+
+# Import and register agent factory router
+from api.agent_factory import router as agent_factory_router
+app.include_router(agent_factory_router)
