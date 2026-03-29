@@ -361,3 +361,26 @@ def setup(database: Database, agent_runner: AgentRunner, sched: Scheduler):
     db = database
     runner = agent_runner
     scheduler = sched
+
+# Import and register models router
+from api.models import router as models_router
+app.include_router(models_router)
+
+# Import and register keys router
+from api.keys import router as keys_router
+app.include_router(keys_router)
+
+# Free models list
+from core.free_models import FREE_MODELS, get_best_free_model
+
+@app.get("/api/free-models")
+async def list_free_models(provider: str = None):
+    """List all free models available."""
+    if provider:
+        return {"models": FREE_MODELS.get(provider, [])}
+    return FREE_MODELS
+
+@app.get("/api/best-free-model")
+async def best_free_model():
+    """Get the best free model available."""
+    return get_best_free_model()
