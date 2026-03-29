@@ -8,6 +8,8 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import Optional, List
 import os
+import yaml
+import httpx
 
 import sys
 from pathlib import Path
@@ -29,7 +31,7 @@ scheduler: Scheduler = None
 class AgentCreate(BaseModel):
     name: str
     provider: str = "openrouter"
-    model: str = "anthropic/claude-sonnet-4"
+    model: str = "xiaomi/mimo-v2-pro"
     instructions: str = ""
     heartbeat_sec: int = 0
     reports_to: Optional[str] = None
@@ -71,6 +73,20 @@ class RunRequest(BaseModel):
 class CommentCreate(BaseModel):
     author: str
     content: str
+
+
+class SettingsUpdate(BaseModel):
+    provider: Optional[str] = None
+    model: Optional[str] = None
+    api_key: Optional[str] = None
+    base_url: Optional[str] = None
+    heartbeat_sec: Optional[int] = None
+
+
+class BulkModelUpdate(BaseModel):
+    model: str
+    provider: str = "openrouter"
+    agent_names: Optional[List[str]] = None  # None = all agents
 
 
 # Agent endpoints
@@ -199,6 +215,133 @@ def get_run(run_id: str):
     run = db.get_task(run_id)  # Note: should be get_run but we use task table
     messages = db.get_messages(run_id)
     return {"messages": messages}
+
+
+# Settings endpoints
+@app.get("/api/settings")
+def get_settings():
+    """Get current platform settings."""
+    config_path = Path(__file__).parent.parent / "config.yaml"
+    if config_path.exists():
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
+    else:
+        config = {}
+    
+    providers = config.get("providers", {})
+    # Hide full API keys, show only last 4 chars
+    safe_providers = {}
+    for name, p in providers.items():
+        safe_providers[name] = {
+            "base_url": p.get("base_url", ""),
+            "api_key_hint": f"...{p.get('api_key', '')[-4:]}" if p.get('api_key') else "",
+        }
+    
+    return {
+        "providers": safe_providers,
+        "server": config.get("server", {}),
+        "database": config.get("database", {}),
+        "telegram_configured": bool(config.get("telegram", {}).get("bot_token")),
+        "workdir": config.get("workdir", "/tmp"),
+        "tool_timeout": config.get("tool_timeout", 30),
+    }
+
+
+@app.get("/api/settings/models")
+def list_models(provider: str = "openrouter"):
+    """List available models from a provider."""
+    config_path = Path(__file__).parent.parent / "config.yaml"
+    if config_path.exists():
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
+    else:
+        config = {}
+    
+    provider_config = config.get("providers", {}).get(provider, {})
+    api_key = provider_config.get("api_key", "")
+    base_url = provider_config.get("base_url", "https://openrouter.ai/api/v1")
+    
+    if not api_key:
+        raise HTTPException(400, f"No API key for provider '{provider}'")
+    
+    try:
+        with httpx.Client(timeout=15.0) as client:
+            resp = client.get(
+                f"{base_url}/models",
+                headers={"Authorization": f"Bearer {api_key}"}
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            
+            models = []
+            for m in data.get("data", []):
+                models.append({
+                    "id": m["id"],
+                    "name": m.get("name", m["id"]),
+                    "context_length": m.get("context_length"),
+                    "pricing": m.get("pricing", {}),
+                })
+            
+            return {"models": models, "count": len(models)}
+    except Exception as e:
+        raise HTTPException(500, f"Failed to fetch models: {e}")
+
+
+@app.post("/api/settings/model/bulk")
+def bulk_update_model(data: BulkModelUpdate):
+    """Change model for all agents or specific agents."""
+    if data.agent_names:
+        agents = [db.get_agent(name=n) for n in data.agent_names]
+        agents = [a for a in agents if a]
+    else:
+        agents = db.list_agents()
+    
+    updated = []
+    for agent in agents:
+        db.update_agent(agent["id"], provider=data.provider, model=data.model)
+        updated.append(agent["name"])
+    
+    return {"updated": updated, "count": len(updated)}
+
+
+@app.post("/api/settings/provider")
+def update_provider_settings(data: SettingsUpdate):
+    """Update provider settings in config.yaml."""
+    config_path = Path(__file__).parent.parent / "config.yaml"
+    if config_path.exists():
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
+    else:
+        config = {}
+    
+    if data.provider:
+        if "providers" not in config:
+            config["providers"] = {}
+        if data.provider not in config["providers"]:
+            config["providers"][data.provider] = {}
+        
+        if data.api_key:
+            config["providers"][data.provider]["api_key"] = data.api_key
+        if data.base_url:
+            config["providers"][data.provider]["base_url"] = data.base_url
+    
+    with open(config_path, "w") as f:
+        yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+    
+    return {"ok": True, "message": "Config updated. Restart server to apply."}
+
+
+# Health check
+@app.get("/api/health")
+def health():
+    agents = db.list_agents()
+    running = sum(1 for a in agents if a.get('status') == 'running')
+    return {
+        "status": "ok",
+        "agents_total": len(agents),
+        "agents_running": running,
+        "scheduler_active": scheduler.running if scheduler else False,
+    }
 
 
 # Dashboard

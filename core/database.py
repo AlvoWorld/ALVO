@@ -5,6 +5,7 @@ Simple SQLite-based storage for agents, tasks, and runs.
 import sqlite3
 import json
 import uuid
+import threading
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from pathlib import Path
@@ -15,6 +16,10 @@ class Database:
         self.db_path = db_path
         self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
+        # Enable WAL mode for better concurrent read/write performance
+        self.conn.execute("PRAGMA journal_mode=WAL")
+        self.conn.execute("PRAGMA busy_timeout=5000")
+        self.lock = threading.Lock()
         self._init_tables()
 
     def _init_tables(self):
@@ -93,13 +98,14 @@ class Database:
                      max_turns: int = 100) -> str:
         agent_id = str(uuid.uuid4())
         tools_json = json.dumps(tools or ["bash", "read", "write", "web_search"])
-        self.conn.execute("""
-            INSERT INTO agents (id, name, provider, model, instructions, 
-                              heartbeat_sec, reports_to, tools, max_turns)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (agent_id, name, provider, model, instructions, 
-              heartbeat_sec, reports_to, tools_json, max_turns))
-        self.conn.commit()
+        with self.lock:
+            self.conn.execute("""
+                INSERT INTO agents (id, name, provider, model, instructions, 
+                                  heartbeat_sec, reports_to, tools, max_turns)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (agent_id, name, provider, model, instructions, 
+                  heartbeat_sec, reports_to, tools_json, max_turns))
+            self.conn.commit()
         return agent_id
 
     def get_agent(self, agent_id: str = None, name: str = None) -> Optional[dict]:
@@ -135,24 +141,27 @@ class Database:
         updates['updated_at'] = datetime.now().isoformat()
         set_clause = ', '.join(f'{k} = ?' for k in updates)
         values = list(updates.values()) + [agent_id]
-        self.conn.execute(f"UPDATE agents SET {set_clause} WHERE id = ?", values)
-        self.conn.commit()
+        with self.lock:
+            self.conn.execute(f"UPDATE agents SET {set_clause} WHERE id = ?", values)
+            self.conn.commit()
         return True
 
     def delete_agent(self, agent_id: str) -> bool:
-        self.conn.execute("DELETE FROM agents WHERE id = ?", (agent_id,))
-        self.conn.commit()
+        with self.lock:
+            self.conn.execute("DELETE FROM agents WHERE id = ?", (agent_id,))
+            self.conn.commit()
         return True
 
     # Tasks
     def create_task(self, title: str, description: str = "", 
                     priority: str = "normal", assignee_id: str = None) -> str:
         task_id = str(uuid.uuid4())
-        self.conn.execute("""
-            INSERT INTO tasks (id, title, description, priority, assignee_id)
-            VALUES (?, ?, ?, ?, ?)
-        """, (task_id, title, description, priority, assignee_id))
-        self.conn.commit()
+        with self.lock:
+            self.conn.execute("""
+                INSERT INTO tasks (id, title, description, priority, assignee_id)
+                VALUES (?, ?, ?, ?, ?)
+            """, (task_id, title, description, priority, assignee_id))
+            self.conn.commit()
         return task_id
 
     def get_task(self, task_id: str) -> Optional[dict]:
@@ -182,17 +191,19 @@ class Database:
             updates['completed_at'] = datetime.now().isoformat()
         set_clause = ', '.join(f'{k} = ?' for k in updates)
         values = list(updates.values()) + [task_id]
-        self.conn.execute(f"UPDATE tasks SET {set_clause} WHERE id = ?", values)
-        self.conn.commit()
+        with self.lock:
+            self.conn.execute(f"UPDATE tasks SET {set_clause} WHERE id = ?", values)
+            self.conn.commit()
         return True
 
     # Runs
     def create_run(self, agent_id: str, task_id: str = None) -> str:
         run_id = str(uuid.uuid4())
-        self.conn.execute("""
-            INSERT INTO runs (id, agent_id, task_id) VALUES (?, ?, ?)
-        """, (run_id, agent_id, task_id))
-        self.conn.commit()
+        with self.lock:
+            self.conn.execute("""
+                INSERT INTO runs (id, agent_id, task_id) VALUES (?, ?, ?)
+            """, (run_id, agent_id, task_id))
+            self.conn.commit()
         return run_id
 
     def update_run(self, run_id: str, **kwargs) -> bool:
@@ -202,26 +213,28 @@ class Database:
             return False
         set_clause = ', '.join(f'{k} = ?' for k in updates)
         values = list(updates.values()) + [run_id]
-        self.conn.execute(f"UPDATE runs SET {set_clause} WHERE id = ?", values)
-        self.conn.commit()
+        with self.lock:
+            self.conn.execute(f"UPDATE runs SET {set_clause} WHERE id = ?", values)
+            self.conn.commit()
         return True
 
     def add_message(self, run_id: str, role: str, content: str, 
                     tool_name: str = None, tool_input: str = None, 
                     tool_output: str = None) -> str:
         msg_id = str(uuid.uuid4())
-        seq = self.conn.execute(
-            "SELECT COALESCE(MAX(seq), 0) + 1 FROM messages WHERE run_id = ?", 
-            (run_id,)
-        ).fetchone()[0]
-        self.conn.execute("""
-            INSERT INTO messages (id, run_id, role, content, tool_name, 
-                                tool_input, tool_output, seq)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (msg_id, run_id, role, content, tool_name, 
-              json.dumps(tool_input) if tool_input else None,
-              tool_output, seq))
-        self.conn.commit()
+        with self.lock:
+            seq = self.conn.execute(
+                "SELECT COALESCE(MAX(seq), 0) + 1 FROM messages WHERE run_id = ?", 
+                (run_id,)
+            ).fetchone()[0]
+            self.conn.execute("""
+                INSERT INTO messages (id, run_id, role, content, tool_name, 
+                                    tool_input, tool_output, seq)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (msg_id, run_id, role, content, tool_name, 
+                  json.dumps(tool_input) if tool_input else None,
+                  tool_output, seq))
+            self.conn.commit()
         return msg_id
 
     def get_messages(self, run_id: str) -> List[dict]:
@@ -239,10 +252,11 @@ class Database:
     # Comments
     def add_comment(self, task_id: str, author: str, content: str) -> str:
         comment_id = str(uuid.uuid4())
-        self.conn.execute("""
-            INSERT INTO comments (id, task_id, author, content) VALUES (?, ?, ?, ?)
-        """, (comment_id, task_id, author, content))
-        self.conn.commit()
+        with self.lock:
+            self.conn.execute("""
+                INSERT INTO comments (id, task_id, author, content) VALUES (?, ?, ?, ?)
+            """, (comment_id, task_id, author, content))
+            self.conn.commit()
         return comment_id
 
     def get_comments(self, task_id: str) -> List[dict]:
