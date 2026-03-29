@@ -396,3 +396,7 @@ app.include_router(load_balancer_router)
 # Import and register failover router
 from api.failover import router as failover_router
 app.include_router(failover_router)
+
+# Import and register secrets router
+from api.secrets import router as secrets_router
+app.include_router(secrets_router)

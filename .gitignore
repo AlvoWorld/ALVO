@@ -1,16 +1,31 @@
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+
+# Database
 *.db
+*.db-shm
+*.db-wal
+
+# Logs
 *.log
-.env
-config.yaml
-.osya.db-journal
 
-# Never commit real config with API keys
-config.yaml
-.env
-*.env
-secrets/
+# IDE
+.vscode/
+.idea/
 
-# Use example instead
+# NEVER COMMIT SECRETS
+.env
+.env.*
+config.yaml
+*.key
+*.pem
+
+# Use examples instead
 config.yaml.example
+.env.example
