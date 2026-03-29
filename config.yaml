@@ -738,6 +738,7 @@ providers:
     api_key:
     - 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
     - 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
+    - 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
     base_url: https://openrouter.ai/api/v1
 server:
   host: 0.0.0.0
