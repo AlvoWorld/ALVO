@@ -384,3 +384,7 @@ async def list_free_models(provider: str = None):
 async def best_free_model():
     """Get the best free model available."""
     return get_best_free_model()
+
+# Import and register agent config router
+from api.agent_config import router as agent_config_router
+app.include_router(agent_config_router)
