@@ -388,3 +388,7 @@ async def best_free_model():
 # Import and register agent config router
 from api.agent_config import router as agent_config_router
 app.include_router(agent_config_router)
+
+# Import and register load balancer router
+from api.load_balancer import router as load_balancer_router
+app.include_router(load_balancer_router)
