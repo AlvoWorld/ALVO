@@ -5,3 +5,12 @@ __pycache__/
 .env
 config.yaml
 .osya.db-journal
+
+# Never commit real config with API keys
+config.yaml
+.env
+*.env
+secrets/
+
+# Use example instead
+config.yaml.example
