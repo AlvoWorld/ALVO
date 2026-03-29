@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSYA — Панель управления</title>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --card: #12121a;
+            --border: #1e1e2e;
+            --text: #e0e0e0;
+            --text-dim: #888;
+            --accent: #6366f1;
+            --green: #22c55e;
+            --red: #ef4444;
+            --yellow: #eab308;
+            --blue: #3b82f6;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+        .header h1 {
+            font-size: 24px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        .status-dot.online { background: var(--green); }
+        .status-dot.offline { background: var(--red); }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .stat-card .label {
+            font-size: 12px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .stat-card .value.green { color: var(--green); }
+        .stat-card .value.yellow { color: var(--yellow); }
+        .stat-card .value.red { color: var(--red); }
+        .stat-card .value.blue { color: var(--blue); }
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 900px) {
+            .main-grid { grid-template-columns: 1fr; }
+        }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-body {
+            padding: 0;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .agent-row {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+        .agent-row:hover { background: rgba(99,102,241,0.05); }
+        .agent-row:last-child { border-bottom: none; }
+        .agent-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        .agent-status.running { background: var(--green); box-shadow: 0 0 6px var(--green); }
+        .agent-status.idle { background: var(--yellow); }
+        .agent-status.error { background: var(--red); }
+        .agent-name {
+            flex: 1;
+            font-size: 14px;
+        }
+        .agent-model {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-left: 8px;
+        }
+        .agent-actions {
+            display: flex;
+            gap: 6px;
+        }
+        .btn {
+            padding: 5px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        .btn-run { border-color: var(--green); color: var(--green); }
+        .btn-run:hover { background: var(--green); color: #000; }
+        .task-row {
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .task-row:last-child { border-bottom: none; }
+        .task-title { font-size: 14px; margin-bottom: 4px; }
+        .task-meta {
+            font-size: 11px;
+            color: var(--text-dim);
+            display: flex;
+            gap: 12px;
+        }
+        .badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .badge.todo { background: rgba(59,130,246,0.2); color: var(--blue); }
+        .badge.done { background: rgba(34,197,94,0.2); color: var(--green); }
+        .badge.high { background: rgba(239,68,68,0.2); color: var(--red); }
+        .badge.low { background: rgba(136,136,136,0.2); color: var(--text-dim); }
+        .refresh-btn {
+            background: var(--accent);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: opacity 0.2s;
+        }
+        .refresh-btn:hover { opacity: 0.8; }
+        .full-width { grid-column: 1 / -1; }
+        .log-area {
+            background: #0d0d14;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-line { margin-bottom: 2px; }
+        .log-time { color: var(--text-dim); }
+        .log-ok { color: var(--green); }
+        .log-err { color: var(--red); }
+        .kicked-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--green);
+            color: #000;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 100;
+        }
+        .kicked-toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 OSYA — Панель управления</h1>
+        <div class="status">
+            <span class="status-dot online" id="statusDot"></span>
+            <span id="statusText">Подключение...</span>
+            <button class="refresh-btn" onclick="refreshAll()">🔄 Обновить</button>
+        </div>
+    </div>
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="label">Агентов всего</div>
+                <div class="value blue" id="totalAgents">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Работают</div>
+                <div class="value green" id="runningAgents">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Ожидают</div>
+                <div class="value yellow" id="idleAgents">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Ошибки</div>
+                <div class="value red" id="errorAgents">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Задач</div>
+                <div class="value" id="totalTasks">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Модель</div>
+                <div class="value" style="font-size:14px" id="modelName">—</div>
+            </div>
+        </div>
+        <div class="main-grid">
+            <div class="card">
+                <div class="card-header">
+                    <span>👥 Агенты</span>
+                    <button class="btn btn-run" onclick="kickAll()">⚡ Запустить всех</button>
+                </div>
+                <div class="card-body" id="agentsList"></div>
+            </div>
+            <div class="card">
+                <div class="card-header">📋 Задачи</div>
+                <div class="card-body" id="tasksList"></div>
+            </div>
+            <div class="card full-width">
+                <div class="card-header">📊 Логи системы</div>
+                <div class="log-area" id="logArea"></div>
+            </div>
+        </div>
+    </div>
+    <div class="kicked-toast" id="toast">✅ Все агенты запущены!</div>
+    <script>
+        const API = window.location.origin;
+        let agents = [];
+        let tasks = [];
+        async function refreshAll() {
+            try {
+                const [healthRes, agentsRes, tasksRes] = await Promise.all([
+                    fetch(`${API}/api/health`),
+                    fetch(`${API}/api/agents`),
+                    fetch(`${API}/api/tasks`)
+                ]);
+                const health = await healthRes.json();
+                agents = await agentsRes.json();
+                tasks = await tasksRes.json();
+                updateStats(health);
+                renderAgents();
+                renderTasks();
+                document.getElementById('statusDot').className = 'status-dot online';
+                document.getElementById('statusText').textContent = 'Онлайн';
+            } catch(e) {
+                document.getElementById('statusDot').className = 'status-dot offline';
+                document.getElementById('statusText').textContent = 'Ошибка';
+                log('err', 'Ошибка подключения к API');
+            }
+        }
+        function updateStats(h) {
+            document.getElementById('totalAgents').textContent = h.agents_total;
+            const running = agents.filter(a => a.status === 'running').length;
+            const idle = agents.filter(a => a.status === 'idle').length;
+            const error = agents.filter(a => a.status === 'error').length;
+            document.getElementById('runningAgents').textContent = running;
+            document.getElementById('idleAgents').textContent = idle;
+            document.getElementById('errorAgents').textContent = error;
+            document.getElementById('totalTasks').textContent = tasks.length;
+            if (agents.length > 0) {
+                document.getElementById('modelName').textContent = agents[0].model;
+            }
+        }
+        function renderAgents() {
+            const el = document.getElementById('agentsList');
+            el.innerHTML = agents.map(a => `
+                <div class="agent-row">
+                    <span class="agent-status ${a.status}"></span>
+                    <span class="agent-name">${a.name}</span>
+                    <span class="agent-model">${a.model.split('/').pop()}</span>
+                    <div class="agent-actions">
+                        <button class="btn btn-run" onclick="runAgent('${a.id}','${a.name}')">▶</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        function renderTasks() {
+            const el = document.getElementById('tasksList');
+            if (tasks.length === 0) {
+                el.innerHTML = '<div style="padding:20px;color:var(--text-dim);text-align:center">Нет задач</div>';
+                return;
+            }
+            el.innerHTML = tasks.map(t => `
+                <div class="task-row">
+                    <div class="task-title">${t.title}</div>
+                    <div class="task-meta">
+                        <span class="badge ${t.status}">${t.status}</span>
+                        ${t.priority ? `<span class="badge ${t.priority}">${t.priority}</span>` : ''}
+                        <span>${t.created_at ? t.created_at.split(' ')[0] : ''}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+        async function runAgent(id, name) {
+            log('ok', `Запуск: ${name}...`);
+            try {
+                const res = await fetch(`${API}/api/agents/${id}/run`, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({task:'Continue autonomous work.'})
+                });
+                const data = await res.json();
+                if (data.status === 'completed') {
+                    log('ok', `✅ ${name}: завершено`);
+                } else if (data.status === 'failed') {
+                    log('err', `❌ ${name}: ${data.error?.substring(0,80)}`);
+                }
+                refreshAll();
+            } catch(e) {
+                log('err', `❌ ${name}: ${e.message}`);
+            }
+        }
+        async function kickAll() {
+            log('ok', '⚡ Запуск всех агентов...');
+            for (const a of agents) {
+                await runAgent(a.id, a.name);
+                await new Promise(r => setTimeout(r, 500));
+            }
+            showToast();
+            refreshAll();
+        }
+        function log(type, msg) {
+            const el = document.getElementById('logArea');
+            const time = new Date().toLocaleTimeString('ru-RU');
+            el.innerHTML += `<div class="log-line"><span class="log-time">[${time}]</span> <span class="log-${type}">${msg}</span></div>`;
+            el.scrollTop = el.scrollHeight;
+        }
+        function showToast() {
+            const t = document.getElementById('toast');
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+        refreshAll();
+        setInterval(refreshAll, 15000);
+    </script>
+</body>
+</html>
