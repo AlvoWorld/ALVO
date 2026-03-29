@@ -392,3 +392,7 @@ app.include_router(agent_config_router)
 # Import and register load balancer router
 from api.load_balancer import router as load_balancer_router
 app.include_router(load_balancer_router)
+
+# Import and register failover router
+from api.failover import router as failover_router
+app.include_router(failover_router)
