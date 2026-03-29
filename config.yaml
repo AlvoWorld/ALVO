@@ -31,7 +31,7 @@ agents:
 
   - name: "CEO"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 3600
     reports_to: null
     max_turns: 200
@@ -60,7 +60,7 @@ agents:
 
   - name: "CTO"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 3600
     reports_to: "CEO"
     max_turns: 200
@@ -95,7 +95,7 @@ agents:
 
   - name: "Project Manager"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 1800
     reports_to: "CEO"
     max_turns: 200
@@ -123,7 +123,7 @@ agents:
 
   - name: "Backend Developer"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 3600
     reports_to: "CTO"
     max_turns: 200
@@ -150,7 +150,7 @@ agents:
 
   - name: "Frontend Developer"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 3600
     reports_to: "CTO"
     max_turns: 200
@@ -176,7 +176,7 @@ agents:
 
   - name: "DevOps Engineer"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 7200
     reports_to: "CTO"
     max_turns: 150
@@ -204,7 +204,7 @@ agents:
 
   - name: "Database Administrator"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 7200
     reports_to: "CTO"
     max_turns: 150
@@ -230,7 +230,7 @@ agents:
 
   - name: "Full-Stack Developer"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 3600
     reports_to: "CTO"
     max_turns: 200
@@ -256,7 +256,7 @@ agents:
 
   - name: "Mobile Developer"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 7200
     reports_to: "CTO"
     max_turns: 150
@@ -283,7 +283,7 @@ agents:
 
   - name: "Security Architect"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 7200
     reports_to: "CEO"
     max_turns: 150
@@ -309,7 +309,7 @@ agents:
 
   - name: "Penetration Tester"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 86400
     reports_to: "Security Architect"
     max_turns: 150
@@ -336,7 +336,7 @@ agents:
 
   - name: "SOC Analyst"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 1800
     reports_to: "Security Architect"
     max_turns: 150
@@ -363,7 +363,7 @@ agents:
 
   - name: "Compliance Officer"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 86400
     reports_to: "Security Architect"
     max_turns: 100
@@ -387,7 +387,7 @@ agents:
 
   - name: "QA Lead"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 7200
     reports_to: "CTO"
     max_turns: 150
@@ -407,7 +407,7 @@ agents:
 
   - name: "QA Automation Engineer"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 7200
     reports_to: "QA Lead"
     max_turns: 150
@@ -432,7 +432,7 @@ agents:
 
   - name: "Performance Engineer"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 86400
     reports_to: "QA Lead"
     max_turns: 150
@@ -456,7 +456,7 @@ agents:
 
   - name: "Data Engineer"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 7200
     reports_to: "CTO"
     max_turns: 150
@@ -476,7 +476,7 @@ agents:
 
   - name: "ML Engineer"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 7200
     reports_to: "CTO"
     max_turns: 150
@@ -497,7 +497,7 @@ agents:
 
   - name: "Data Analyst"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 7200
     reports_to: "CEO"
     max_turns: 150
@@ -521,7 +521,7 @@ agents:
 
   - name: "Technical Writer"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 86400
     reports_to: "CTO"
     max_turns: 100
@@ -546,7 +546,7 @@ agents:
 
   - name: "Макетолог"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 7200
     reports_to: "CTO"
     max_turns: 150
@@ -584,7 +584,7 @@ agents:
 
   - name: "Marketer"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 7200
     reports_to: "CEO"
     max_turns: 150
@@ -616,7 +616,7 @@ agents:
 
   - name: "Psychologist"
     provider: openrouter
-    model: "openrouter/free"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
     heartbeat_sec: 86400
     reports_to: "CEO"
     max_turns: 100
