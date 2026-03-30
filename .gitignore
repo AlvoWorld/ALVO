@@ -44,3 +44,17 @@ performance_*.md
 security_architect_*.md
 heartbeat_summary.json
 heartbeat_checklist
+
+# Never commit agent-generated reports
+compliance/
+*_decisions_*.md
+*_tasks.md
+*_report_*.md
+*_checklist
+performance_*.md
+performance_*.py
+load_test.js
+agent_config.json
+API_DOCUMENTATION.md
+CHANGELOG.md
+INSTALLATION_GUIDE.md
