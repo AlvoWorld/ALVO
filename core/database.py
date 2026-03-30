@@ -169,15 +169,15 @@ class Database:
         return dict(row) if row else None
 
     def list_tasks(self, status: str = None, assignee_id: str = None) -> List[dict]:
-        query = "SELECT t.*, a.name as assignee_name FROM tasks t LEFT JOIN agents a ON t.assignee_id = a.id WHERE 1=1"
+        query = "SELECT t.*, a.name as assignee_name FROM tasks t LEFT JOIN agents a ON t.assigned_to = a.id WHERE 1=1"
         params = []
         if status:
             query += " AND t.status = ?"
             params.append(status)
         if assignee_id:
-            query += " AND t.assignee_id = ?"
+            query += " AND t.assigned_to = ?"
             params.append(assignee_id)
-        query += " ORDER BY CASE t.priority WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END, t.created_at DESC"
+        query += " ORDER BY t.created_at DESC"
         rows = self.conn.execute(query, params).fetchall()
         return [dict(r) for r in rows]
 
@@ -264,3 +264,41 @@ class Database:
             "SELECT * FROM comments WHERE task_id = ? ORDER BY created_at", (task_id,)
         ).fetchall()
         return [dict(r) for r in rows]
+
+    def list_runs(self, limit: int = 50) -> list:
+        """List recent runs with agent names."""
+        cursor = self.conn.execute("""
+            SELECT r.*, a.name as agent_name 
+            FROM runs r LEFT JOIN agents a ON r.agent_id = a.id 
+            ORDER BY r.started_at DESC LIMIT ?
+        """, (limit,))
+        return [dict(row) for row in cursor.fetchall()]
+
+    def get_run_stats(self) -> dict:
+        """Get aggregated run statistics."""
+        cursor = self.conn.execute("""
+            SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) as completed,
+                SUM(CASE WHEN status='failed' THEN 1 ELSE 0 END) as failed,
+                COALESCE(SUM(cost_usd), 0) as total_cost,
+                COALESCE(SUM(input_tokens), 0) as tokens_in,
+                COALESCE(SUM(output_tokens), 0) as tokens_out
+            FROM runs
+        """)
+        row = cursor.fetchone()
+        total = row[0] or 0
+        completed = row[1] or 0
+        return {
+            "total": total,
+            "completed": completed,
+            "failed": row[2] or 0,
+            "success_rate": round(completed / max(total, 1) * 100, 1),
+            "total_cost": round(row[3] or 0, 4),
+            "tokens_in": row[4] or 0,
+            "tokens_out": row[5] or 0,
+        }
+
+    def close(self):
+        """Close database connection."""
+        self.conn.close()

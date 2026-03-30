@@ -24,13 +24,9 @@ class AgentRunner:
             timeout=self.config.get("tool_timeout", 30),
         )
     
-    def run(self, agent_name: str, message: str = None, task_id: str = None) -> Dict[str, Any]:
-        """Run an agent with a message or task."""
-        agent = self.db.get_agent(name=agent_name)
-        if not agent:
-            return {"error": f"Agent '{agent_name}' not found"}
-        
-        # Get task if specified
+
+    def _get_agent_task(self, agent: dict, message: str = None, task_id: str = None):
+        """Get task and message for agent run."""
         task = None
         if task_id:
             task = self.db.get_task(task_id)
@@ -38,7 +34,6 @@ class AgentRunner:
                 message = f"Task: {task['title']}\n\n{task['description']}"
         
         if not message:
-            # Get first pending task
             tasks = self.db.list_tasks(status='todo', assignee_id=agent['id'])
             if tasks:
                 task = tasks[0]
@@ -46,24 +41,18 @@ class AgentRunner:
             else:
                 message = "No pending tasks. Check your heartbeat checklist."
         
-        # Create run
-        run_id = self.db.create_run(agent['id'], task_id)
-        
-        # Update agent status
-        self.db.update_agent(agent['id'], status='running')
-        
-        # Build system prompt
+        return task, message
+
+    def _build_messages(self, agent: dict, message: str, task: dict, run_id: str) -> list:
+        """Build message list for LLM."""
         system_prompt = self._build_system_prompt(agent)
-        
-        # Build messages
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": message},
         ]
         
-        # Add task context if exists
         if task:
-            comments = self.db.get_comments(task_id or task['id'])
+            comments = self.db.get_comments(task['id'])
             if comments:
                 comment_text = "\n".join([
                     f"[{c['author']} at {c['created_at']}]: {c['content']}" 
@@ -74,127 +63,85 @@ class AgentRunner:
                     "content": f"Task comments:\n{comment_text}"
                 })
         
-        # Save user message
         self.db.add_message(run_id, "user", message)
-        
-        # Initialize LLM
-        provider = agent.get('provider', 'openrouter')
-        model = agent.get('model', 'openrouter/auto')
-        
-        # Get provider config
-        provider_config = self.config.get('providers', {}).get(provider, {})
-        api_key = provider_config.get('api_key')
-        base_url = provider_config.get('base_url')
-        
-        # Model failover list
-        fallback_models = [
+        return messages
+
+    def _get_fallback_models(self, primary_model: str) -> list:
+        """Get model failover list."""
+        fallbacks = [
             'nvidia/nemotron-3-super-120b-a12b:free',
             'stepfun/step-3.5-flash:free',
         ]
-        if model not in fallback_models:
-            fallback_models.insert(0, model)
+        if primary_model not in fallbacks:
+            fallbacks.insert(0, primary_model)
         else:
-            fallback_models.remove(model)
-            fallback_models.insert(0, model)
-        
-        last_error = None
-        for attempt_model in fallback_models:
-            try:
-                llm = LLMProvider(provider, attempt_model, api_key=api_key, base_url=base_url)
-                if attempt_model != model:
-                    print(f"🔄 Model failover: {model} → {attempt_model}")
-                
-                max_turns = agent.get('max_turns', 100)
-                tools = json.loads(agent['tools']) if isinstance(agent['tools'], str) else agent['tools']
-                total_input = 0
-                total_output = 0
-                total_cost = 0.0
-                
-                for turn in range(max_turns):
-                    response = llm.chat(
-                        messages=messages,
-                        tools=tools,
-                        max_tokens=4096,
-                        temperature=0.7,
-                    )
-                    
-                    total_input += response.input_tokens
-                    total_output += response.output_tokens
-                    total_cost += response.cost_usd
-                    
-                    assistant_content = response.content
-                    self.db.add_message(run_id, "assistant", assistant_content)
-                    
-                    if not response.tool_calls:
-                        messages.append({"role": "assistant", "content": assistant_content})
-                        break
-                    
-                    tool_calls_msg = {
-                        "role": "assistant",
-                        "content": assistant_content or "",
-                        "tool_calls": [
-                            {
-                                "id": tc["id"],
-                                "type": "function",
-                                "function": {
-                                    "name": tc["name"],
-                                    "arguments": json.dumps(tc["input"]),
-                                }
-                            }
-                            for tc in response.tool_calls
-                        ]
+            fallbacks.remove(primary_model)
+            fallbacks.insert(0, primary_model)
+        return fallbacks
+
+    def _execute_tool_calls(self, response, messages: list, run_id: str):
+        """Execute tool calls and update messages."""
+        tool_calls_msg = {
+            "role": "assistant",
+            "content": response.content or "",
+            "tool_calls": [
+                {
+                    "id": tc["id"],
+                    "type": "function",
+                    "function": {
+                        "name": tc["name"],
+                        "arguments": json.dumps(tc["input"]),
                     }
-                    messages.append(tool_calls_msg)
-                    
-                    for tc in response.tool_calls:
-                        tool_output = self.tool_executor.execute(tc["name"], tc["input"])
-                        self.db.add_message(
-                            run_id, "tool", tool_output,
-                            tool_name=tc["name"],
-                            tool_input=json.dumps(tc["input"]),
-                            tool_output=tool_output,
-                        )
-                        messages.append({
-                            "role": "tool",
-                            "tool_call_id": tc["id"],
-                            "content": tool_output,
-                        })
-                
-                # Success - update and return
-                self.db.update_run(run_id, 
-                    status='completed',
-                    input_tokens=total_input,
-                    output_tokens=total_output,
-                    cost_usd=total_cost,
-                    finished_at=datetime.now().isoformat(),
-                )
-                self.db.update_agent(agent['id'], status='idle')
-                
-                if task:
-                    self.db.update_task(task['id'], status='done')
-                    self.db.add_comment(task['id'], agent_name, 
-                        f"Completed. Cost: ${total_cost:.4f}, Tokens: {total_input}in/{total_output}out")
-                
-                return {
-                    "run_id": run_id,
-                    "status": "completed",
-                    "response": assistant_content,
-                    "input_tokens": total_input,
-                    "output_tokens": total_output,
-                    "cost_usd": total_cost,
-                    "turns": turn + 1,
                 }
-                    
-            except Exception as e:
-                last_error = str(e)
-                if '429' in last_error or '401' in last_error or '403' in last_error:
-                    print(f"⚠️ Model {attempt_model} failed: {last_error[:60]}, trying next...")
-                    continue
-                else:
-                    raise
+                for tc in response.tool_calls
+            ]
+        }
+        messages.append(tool_calls_msg)
         
-        # All models failed
-        error_msg = f"All models failed. Last error: {last_error}"
+        for tc in response.tool_calls:
+            tool_output = self.tool_executor.execute(tc["name"], tc["input"])
+            self.db.add_message(
+                run_id, "tool", tool_output,
+                tool_name=tc["name"],
+                tool_input=json.dumps(tc["input"]),
+                tool_output=tool_output,
+            )
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tc["id"],
+                "content": tool_output,
+            })
+
+    def _complete_run(self, run_id: str, agent: dict, task: dict, 
+                      agent_name: str, total_input: int, total_output: int, 
+                      total_cost: float, turns: int) -> dict:
+        """Mark run as completed and update related records."""
+        self.db.update_run(run_id, 
+            status='completed',
+            input_tokens=total_input,
+            output_tokens=total_output,
+            cost_usd=total_cost,
+            finished_at=datetime.now().isoformat(),
+        )
+        self.db.update_agent(agent['id'], status='idle')
+        
+        if task:
+            self.db.update_task(task['id'], status='done')
+            self.db.add_comment(task['id'], agent_name, 
+                f"Completed. Cost: ${total_cost:.4f}, Tokens: {total_input}in/{total_output}out")
+        
+        return {
+            "run_id": run_id,
+            "status": "completed",
+            "input_tokens": total_input,
+            "output_tokens": total_output,
+            "cost_usd": total_cost,
+            "turns": turns,
+        }
+
+    def _fail_run(self, run_id: str, agent: dict, task: dict, 
+                  agent_name: str, error_msg: str) -> dict:
+        """Mark run as failed and update related records."""
         self.db.update_run(run_id, 
             status='failed',
             error=error_msg,
@@ -205,11 +152,73 @@ class AgentRunner:
         if task:
             self.db.add_comment(task['id'], agent_name, f"Failed: {error_msg}")
         
-        return {
-            "run_id": run_id,
-            "status": "failed",
-            "error": error_msg,
-        }
+        return {"run_id": run_id, "status": "failed", "error": error_msg}
+
+    def run(self, agent_name: str, message: str = None, task_id: str = None) -> Dict[str, Any]:
+        """Run an agent with a message or task."""
+        agent = self.db.get_agent(name=agent_name)
+        if not agent:
+            return {"error": f"Agent '{agent_name}' not found"}
+        
+        # Get task and message
+        task, message = self._get_agent_task(agent, message, task_id)
+        
+        # Create run and update status
+        run_id = self.db.create_run(agent['id'], task_id)
+        self.db.update_agent(agent['id'], status='running')
+        
+        # Build messages
+        messages = self._build_messages(agent, message, task, run_id)
+        
+        # Get provider config
+        provider = agent.get('provider', 'openrouter')
+        model = agent.get('model', 'openrouter/auto')
+        provider_config = self.config.get('providers', {}).get(provider, {})
+        api_key = provider_config.get('api_key')
+        base_url = provider_config.get('base_url')
+        
+        # Model failover
+        fallback_models = self._get_fallback_models(model)
+        
+        last_error = None
+        for attempt_model in fallback_models:
+            try:
+                llm = LLMProvider(provider, attempt_model, api_key=api_key, base_url=base_url)
+                if attempt_model != model:
+                    print(f"🔄 Model failover: {model} → {attempt_model}")
+                
+                max_turns = agent.get('max_turns', 100)
+                tools = json.loads(agent['tools']) if isinstance(agent['tools'], str) else agent['tools']
+                total_input = total_output = 0
+                total_cost = 0.0
+                
+                for turn in range(max_turns):
+                    response = llm.chat(messages=messages, tools=tools, max_tokens=4096, temperature=0.7)
+                    
+                    total_input += response.input_tokens
+                    total_output += response.output_tokens
+                    total_cost += response.cost_usd
+                    
+                    self.db.add_message(run_id, "assistant", response.content)
+                    
+                    if not response.tool_calls:
+                        messages.append({"role": "assistant", "content": response.content})
+                        break
+                    
+                    self._execute_tool_calls(response, messages, run_id)
+                
+                return self._complete_run(run_id, agent, task, agent_name, 
+                                         total_input, total_output, total_cost, turn + 1)
+                    
+            except Exception as e:
+                last_error = str(e)
+                if any(code in last_error for code in ['429', '401', '403']):
+                    print(f"⚠️ Model {attempt_model} failed: {last_error[:60]}, trying next...")
+                    continue
+                raise
+        
+        return self._fail_run(run_id, agent, task, agent_name, 
+                            f"All models failed. Last error: {last_error}")
     
     def _build_system_prompt(self, agent: dict) -> str:
         """Build the system prompt for an agent."""

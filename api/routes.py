@@ -211,13 +211,9 @@ def get_comments(task_id: str):
 
 # Run endpoints
 @app.get("/api/runs")
-async def list_runs():
-    import sqlite3
-    conn = sqlite3.connect("osya.db")
-    conn.row_factory = sqlite3.Row
-    rows = conn.execute("SELECT r.*, a.name as agent_name FROM runs r LEFT JOIN agents a ON r.agent_id=a.id ORDER BY r.started_at DESC LIMIT 50").fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
+def list_runs(limit: int = 50):
+    """List recent runs with agent names."""
+    return db.list_runs(limit=limit)
 
 @app.get("/api/runs/{run_id}")
 def get_run(run_id: str):
@@ -371,10 +367,6 @@ def setup(database: Database, agent_runner: AgentRunner, sched: Scheduler):
     runner = agent_runner
     scheduler = sched
 
-# Import and register models router
-
-# Import and register keys router
-
 # Free models list
 from core.free_models import FREE_MODELS, get_best_free_model
 
@@ -390,39 +382,26 @@ async def best_free_model():
     """Get the best free model available."""
     return get_best_free_model()
 
-# Import and register agent config router
-
-# Import and register load balancer router
-
-# Import and register failover router
-
-# Import and register secrets router
-
 # Import and register agent factory router
 from api.agent_factory import router as agent_factory_router
 app.include_router(agent_factory_router)
 
 @app.get("/api/stats")
-async def get_stats():
-    import sqlite3
-    conn = sqlite3.connect("osya.db")
-    conn.row_factory = sqlite3.Row
-    agents = conn.execute("SELECT COUNT(*) as c FROM agents").fetchone()["c"]
-    running = conn.execute("SELECT COUNT(*) as c FROM agents WHERE status='running'").fetchone()["c"]
-    tasks = conn.execute("SELECT COUNT(*) as c FROM tasks").fetchone()["c"]
-    done = conn.execute("SELECT COUNT(*) as c FROM tasks WHERE status='done'").fetchone()["c"]
-    runs = conn.execute("SELECT COUNT(*) as c FROM runs").fetchone()["c"]
-    completed = conn.execute("SELECT COUNT(*) as c FROM runs WHERE status='completed'").fetchone()["c"]
-    failed = conn.execute("SELECT COUNT(*) as c FROM runs WHERE status='failed'").fetchone()["c"]
-    cost = conn.execute("SELECT COALESCE(SUM(cost_usd),0) as c FROM runs").fetchone()["c"]
-    tokens_in = conn.execute("SELECT COALESCE(SUM(input_tokens),0) as c FROM runs").fetchone()["c"]
-    tokens_out = conn.execute("SELECT COALESCE(SUM(output_tokens),0) as c FROM runs").fetchone()["c"]
-    conn.close()
+def get_stats():
+    """Get aggregated platform statistics."""
+    agents = db.list_agents()
+    running = sum(1 for a in agents if a.get('status') == 'running')
+    tasks = db.list_tasks()
+    done = sum(1 for t in tasks if t.get('status') == 'done')
+    stats = db.get_run_stats()
     return {
-        "agents_total": agents, "agents_running": running,
-        "tasks_total": tasks, "tasks_done": done,
-        "runs_total": runs, "runs_completed": completed, "runs_failed": failed,
-        "success_rate": round(completed/max(runs,1)*100, 1),
-        "total_cost_usd": round(cost, 4),
-        "total_tokens_in": tokens_in, "total_tokens_out": tokens_out
+        "agents_total": len(agents), "agents_running": running,
+        "tasks_total": len(tasks), "tasks_done": done,
+        "runs_total": stats.get("total", 0),
+        "runs_completed": stats.get("completed", 0),
+        "runs_failed": stats.get("failed", 0),
+        "success_rate": stats.get("success_rate", 0),
+        "total_cost_usd": stats.get("total_cost", 0),
+        "total_tokens_in": stats.get("tokens_in", 0),
+        "total_tokens_out": stats.get("tokens_out", 0),
     }
