@@ -7,172 +7,233 @@
 <style>
 :root{--bg:#0a0a0f;--card:#12121a;--border:#1e1e2e;--text:#e0e0e0;--dim:#888;--accent:#6366f1;--green:#22c55e;--red:#ef4444;--yellow:#eab308;--blue:#3b82f6}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-.hd{background:linear-gradient(135deg,#1a1a2e,#16213e);padding:16px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
-.hd h1{font-size:24px;background:linear-gradient(90deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:4px;font-weight:800}
-.nv{display:flex;gap:4px;flex-wrap:wrap}
-.nv a{color:var(--dim);text-decoration:none;padding:8px 14px;border-radius:8px;font-size:13px;transition:.2s;cursor:pointer}
-.nv a:hover,.nv a.on{background:var(--accent);color:#fff}
-.mn{padding:24px;max-width:1400px;margin:0 auto}
-.pg{display:none}.pg.on{display:block}
-.gr{display:grid;gap:16px}.g4{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}.g3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
-.st{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
-.st .lb{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
-.st .vl{font-size:32px;font-weight:700}.vl.g{color:var(--green)}.vl.a{color:var(--accent)}.vl.y{color:var(--yellow)}.vl.r{color:var(--red)}
-.cd{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
-.cd h3{color:var(--accent);margin-bottom:14px;font-size:15px}
-.ag{display:flex;align-items:center;gap:12px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:10px}
-.dt{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.dt.g{background:var(--green)}.dt.r{background:var(--red)}.dt.y{background:var(--yellow)}
-.ag .nm{font-weight:600;font-size:14px}.ag .md{color:var(--dim);font-size:12px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh}
+.sidebar{width:220px;background:var(--card);border-right:1px solid var(--border);padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
+.sidebar h1{font-size:20px;background:linear-gradient(90deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:3px;padding:0 20px 20px;font-weight:800}
+.sidebar a{display:flex;align-items:center;gap:10px;padding:12px 20px;color:var(--dim);text-decoration:none;font-size:14px;transition:.2s;cursor:pointer}
+.sidebar a:hover,.sidebar a.on{background:rgba(99,102,241,.1);color:var(--accent);border-right:3px solid var(--accent)}
+.sidebar .icon{width:20px;text-align:center}
+.main{margin-left:220px;flex:1;padding:24px 32px}
+.page{display:none}.page.on{display:block}
+.grid{display:grid;gap:16px}.g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:1200px){.g4{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){.sidebar{width:60px}.sidebar h1,.sidebar span{display:none}.main{margin-left:60px}.g4,.g3,.g2{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.card h3{color:var(--accent);margin-bottom:14px;font-size:15px;display:flex;align-items:center;gap:8px}
+.stat .label{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.stat .value{font-size:32px;font-weight:700}.value.green{color:var(--green)}.value.accent{color:var(--accent)}.value.yellow{color:var(--yellow)}.value.red{color:var(--red)}
+.agent{display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;transition:.2s}
+.agent:hover{border-color:var(--accent)}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dot.green{background:var(--green)}.dot.red{background:var(--red)}.dot.yellow{background:var(--yellow)}
+.agent .name{font-weight:600;font-size:14px}.agent .info{color:var(--dim);font-size:12px}
 table{width:100%;border-collapse:collapse}
 th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:13px}
-th{color:var(--dim);font-weight:500;text-transform:uppercase;letter-spacing:.5px;font-size:11px}
-.b{padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600}
-.b.g{background:rgba(34,197,94,.15);color:var(--green)}.b.y{background:rgba(234,179,8,.15);color:var(--yellow)}.b.r{background:rgba(239,68,68,.15);color:var(--red)}.b.a{background:rgba(99,102,241,.15);color:var(--accent)}
-.kr{display:flex;justify-content:space-between;align-items:center;padding:14px;background:var(--card);border-radius:8px;border:1px solid var(--border)}
-.kr .mk{font-family:monospace;color:var(--dim)}
-.org{margin-left:24px;padding:10px 0;border-left:2px solid var(--border);padding-left:16px}
-.ch{display:inline-block;width:200px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin:4px;padding:12px;vertical-align:top}
-.ch .ct{font-weight:600;font-size:13px;margin-bottom:4px}.ch .ci{color:var(--dim);font-size:11px}
+th{color:var(--dim);font-weight:500;text-transform:uppercase;letter-spacing:.5px;font-size:11px;position:sticky;top:0;background:var(--card)}
+tr:hover td{background:rgba(99,102,241,.05)}
+.badge{padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600}
+.badge.green{background:rgba(34,197,94,.15);color:var(--green)}.badge.yellow{background:rgba(234,179,8,.15);color:var(--yellow)}.badge.red{background:rgba(239,68,68,.15);color:var(--red)}.badge.accent{background:rgba(99,102,241,.15);color:var(--accent)}
+.key-row{display:flex;justify-content:space-between;align-items:center;padding:14px;background:var(--bg);border-radius:8px;border:1px solid var(--border)}
+.key-row .mask{font-family:monospace;color:var(--dim)}
+.org-node{margin-left:28px;padding:10px 0;border-left:2px solid var(--border);padding-left:16px}
+.org-box{display:inline-block;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin:4px;min-width:160px}
+.org-box .title{font-weight:600;font-size:13px}.org-box .sub{color:var(--dim);font-size:11px}
 input,textarea,select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:14px;width:100%}
 input:focus,textarea:focus{border-color:var(--accent);outline:none}
 label{display:block;margin-bottom:4px;color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
-button,.btn{background:var(--accent);color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
-button:hover,.btn:hover{opacity:.9}
-.frm{display:grid;gap:12px;max-width:500px}
+button{background:var(--accent);color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:.2s}
+button:hover{opacity:.85}
+button.danger{background:var(--red)}
+button.success{background:var(--green)}
+.form{display:grid;gap:12px;max-width:500px}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--card);border:1px solid var(--accent);border-radius:8px;padding:12px 20px;z-index:1000;animation:slideIn .3s}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.chart{height:200px;display:flex;align-items:flex-end;gap:4px;padding:10px 0}
+.chart .bar{background:var(--accent);border-radius:4px 4px 0 0;transition:.3s;min-width:20px}
+.chart .bar:hover{background:var(--green)}
+.tabs{display:flex;gap:4px;margin-bottom:16px}
+.tabs a{padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;color:var(--dim);transition:.2s}
+.tabs a:hover,.tabs a.on{background:var(--accent);color:#fff}
 </style>
 </head>
 <body>
-<div class="hd"><h1>AXIOM</h1><div class="nv" id="nv"></div></div>
-<div class="mn" id="mn"></div>
+<div class="sidebar">
+<h1>AXIOM</h1>
+<a onclick="go('dashboard')" class="on" id="nav-dashboard"><span class="icon">📊</span><span>Dashboard</span></a>
+<a onclick="go('agents')" id="nav-agents"><span class="icon">🤖</span><span>Агенты</span></a>
+<a onclick="go('tasks')" id="nav-tasks"><span class="icon">📋</span><span>Задачи</span></a>
+<a onclick="go('orgchart')" id="nav-orgchart"><span class="icon">🏢</span><span>Org Chart</span></a>
+<a onclick="go('models')" id="nav-models"><span class="icon">🧠</span><span>Модели</span></a>
+<a onclick="go('keys')" id="nav-keys"><span class="icon">🔑</span><span>Ключи</span></a>
+<a onclick="go('departments')" id="nav-departments"><span class="icon">🏗️</span><span>Департаменты</span></a>
+<a onclick="go('runs')" id="nav-runs"><span class="icon">⚡</span><span>Запуски</span></a>
+<a onclick="go('design')" id="nav-design"><span class="icon">🎨</span><span>Дизайн</span></a>
+<a onclick="go('settings')" id="nav-settings"><span class="icon">⚙️</span><span>Настройки</span></a>
+</div>
+<div class="main">
+<div id="pg-dashboard" class="page on"></div>
+<div id="pg-agents" class="page"></div>
+<div id="pg-tasks" class="page"></div>
+<div id="pg-orgchart" class="page"></div>
+<div id="pg-models" class="page"></div>
+<div id="pg-keys" class="page"></div>
+<div id="pg-departments" class="page"></div>
+<div id="pg-runs" class="page"></div>
+<div id="pg-design" class="page"></div>
+<div id="pg-settings" class="page"></div>
+</div>
 <script>
-const P=[
-{id:'dashboard',icon:'📊',label:'Dashboard'},
-{id:'agents',icon:'🤖',label:'Агенты'},
-{id:'tasks',icon:'📋',label:'Задачи'},
-{id:'orgchart',icon:'🏢',label:'Org Chart'},
-{id:'models',icon:'🧠',label:'Модели'},
-{id:'keys',icon:'🔑',label:'Ключи'},
-{id:'departments',icon:'🏗️',label:'Департаменты'},
-{id:'runs',icon:'⚡',label:'Запуски'},
-{id:'design',icon:'🎨',label:'Дизайн'},
-{id:'settings',icon:'⚙️',label:'Настройки'}
-];
-let cur='dashboard',D={};
+let D={};
 const $=s=>document.querySelector(s);
-function nv(){$('#nv').innerHTML=P.map(p=>'<a onclick="go(\''+p.id+'\')" class="'+(cur===p.id?'on':'')+'">'+p.icon+' '+p.label+'</a>').join('');}
-function go(id){cur=id;nv();rn();}
+function go(id){
+document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+document.querySelectorAll('.sidebar a').forEach(a=>a.classList.remove('on'));
+$('#pg-'+id).classList.add('on');
+$('#nav-'+id).classList.add('on');
+render(id);
+}
 async function api(u){try{return await fetch(u).then(r=>r.json());}catch(e){return null;}}
-async function ld(){
+async function load(){
 D.health=await api('/api/health');
 D.agents=await api('/api/agents');
 D.tasks=await api('/api/tasks');
 D.failover=await api('/api/failover/status');
 D.runs=await api('/api/runs');
 }
-function rn(){
+function render(id){
 const h=D.health||{},a=D.agents||[],t=D.tasks||[],f=D.failover||{},r=D.runs||[];
 let s='';
-switch(cur){
+switch(id){
 case 'dashboard':
-s='<div class="gr g4">'+
-'<div class="st"><div class="lb">Агентов</div><div class="vl a">'+(h.agents_total||0)+'</div></div>'+
-'<div class="st"><div class="lb">Активных</div><div class="vl g">'+(h.agents_running||0)+'</div></div>'+
-'<div class="st"><div class="lb">Задач</div><div class="vl">'+(h.tasks_total||0)+'</div></div>'+
-'<div class="st"><div class="lb">Выполнено</div><div class="vl g">'+(h.tasks_done||0)+'</div></div>'+
-'<div class="st"><div class="lb">Ключей</div><div class="vl y">'+(f.total_keys||0)+'</div></div>'+
-'<div class="st"><div class="lb">Активный ключ</div><div class="vl" style="font-size:14px">'+(f.current_key||'—')+'</div></div>'+
-'</div>'+
-'<div class="cd"><h3>Статус агентов</h3><div class="gr g3">'+
-a.slice(0,12).map(x=>'<div class="ag"><div class="dt '+(x.status==='running'?'g':x.status==='error'?'r':'y')+'"></div><div><div class="nm">'+x.name+'</div><div class="md">'+(x.model||'').split('/').pop()+'</div></div></div>').join('')+
-'</div></div>';
+const running=a.filter(x=>x.status==='running').length;
+const error=a.filter(x=>x.status==='error').length;
+const done=t.filter(x=>x.status==='done').length;
+s=`<h2 style="margin-bottom:24px">Dashboard</h2>
+<div class="grid g4">
+<div class="card stat"><div class="label">Агентов</div><div class="value accent">${a.length}</div></div>
+<div class="card stat"><div class="label">Активных</div><div class="value green">${running}</div></div>
+<div class="card stat"><div class="label">Задач</div><div class="value">${t.length}</div></div>
+<div class="card stat"><div class="label">Ключей</div><div class="value yellow">${f.total_keys||0}</div></div>
+</div>
+<div class="grid g2" style="margin-top:16px">
+<div class="card"><h3>📊 Статус агентов</h3>
+<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">
+${a.slice(0,12).map(x=>'<div class="agent"><div class="dot '+(x.status==='running'?'green':x.status==='error'?'red':'yellow')+'"></div><div><div class="name">'+x.name+'</div><div class="info">'+(x.model||'').split('/').pop()+'</div></div></div>').join('')}
+</div></div>
+<div class="card"><h3>📈 Активность</h3>
+<div class="chart">${(()=>{const counts={};(r||[]).forEach(x=>{const h=(x.finished_at||'').slice(11,13)||'??';counts[h]=(counts[h]||0)+1;});const max=Math.max(...Object.values(counts),1);return Object.entries(counts).slice(-12).map(([k,v])=>'<div class="bar" style="height:'+(v/max*180)+'px;flex:1" title="'+k+':00 — '+v+' runs">'+k+'</div>').join('');})()}</div></div>
+</div>`;
 break;
 case 'agents':
-s='<div class="cd"><h3>Все агенты ('+a.length+')</h3><div class="gr g3">'+
-a.map(x=>'<div class="ag"><div class="dt '+(x.status==='running'?'g':x.status==='error'?'r':'y')+'"></div><div><div class="nm">'+x.name+'</div><div class="md">'+x.model+' | '+x.status+'</div></div></div>').join('')+
-'</div></div>';
+s=`<h2 style="margin-bottom:24px">Агенты (${a.length})</h2>
+<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
+${a.map(x=>'<div class="card"><div style="display:flex;align-items:center;gap:12px"><div class="dot '+(x.status==='running'?'green':x.status==='error'?'red':'yellow')+'"></div><div><div style="font-weight:600">'+x.name+'</div><div style="color:var(--dim);font-size:12px">'+(x.model||'')+'</div><div style="color:var(--dim);font-size:11px;margin-top:4px">'+(x.instructions||'').slice(0,80)+'...</div></div></div></div>').join('')}
+</div>`;
 break;
 case 'tasks':
-s='<div class="cd"><h3>Задачи ('+t.length+')</h3><table><thead><tr><th>Статус</th><th>Название</th><th>Назначен</th></tr></thead><tbody>'+
-t.slice(0,30).map(x=>'<tr><td><span class="b '+(x.status==='done'?'g':x.status==='pending'?'y':'r')+'">'+x.status+'</span></td><td>'+(x.title||'').slice(0,60)+'</td><td>'+(x.assigned_to_name||'—')+'</td></tr>').join('')+
-'</tbody></table></div>';
+s=`<h2 style="margin-bottom:24px">Задачи (${t.length})</h2>
+<div class="card"><table><thead><tr><th>Статус</th><th>Название</th><th>Назначен</th><th>Создано</th></tr></thead>
+<tbody>${t.slice(0,30).map(x=>'<tr><td><span class="badge '+(x.status==='done'?'green':x.status==='pending'?'yellow':'red')+'">'+x.status+'</span></td><td>'+(x.title||'').slice(0,50)+'</td><td>'+(x.assigned_to_name||'—')+'</td><td>'+(x.created_at||'').slice(0,16)+'</td></tr>').join('')}</tbody></table></div>
+<div class="card" style="margin-top:16px"><h3>Создать задачу</h3><div class="form">
+<label>Название</label><input id="new-task-title" placeholder="Задача">
+<label>Описание</label><textarea id="new-task-desc" rows="3" placeholder="Описание..."></textarea>
+<label>Назначить</label><select id="new-task-agent">${a.map(x=>'<option value="'+x.id+'">'+x.name+'</option>').join('')}</select>
+<button onclick="createTask()">Создать</button></div></div>`;
 break;
 case 'orgchart':
-s='<div class="cd"><h3>Организационная структура</h3><div style="padding:20px">'+
-'<div class="ch"><div class="ct">🎯 Dima</div><div class="ci">Заказчик</div></div>'+
-'<div class="org"><div class="ch"><div class="ct">👔 CEO</div><div class="ci">Стратегия, координация</div></div>'+
-'<div class="org">'+
-'<div class="ch"><div class="ct">🔧 CTO</div><div class="ci">Техническое лидерство</div></div>'+
-'<div class="org">'+
-a.filter(x=>x.reports_to&&a.find(y=>y.id===x.reports_to&&y.name==='CTO')).map(x=>'<div class="ch"><div class="ct">👤 '+x.name+'</div><div class="ci">'+x.status+'</div></div>').join('')+
-'</div>'+
-'<div class="ch"><div class="ct">📋 Project Manager</div><div class="ci">Задачи, спринты</div></div>'+
-'<div class="ch"><div class="ct">🔒 Security Architect</div><div class="ci">Безопасность</div></div>'+
-'<div class="ch"><div class="ct">📊 Data Analyst</div><div class="ci">Метрики</div></div>'+
-'<div class="ch"><div class="ct">📢 Marketer</div><div class="ci">Маркетинг</div></div>'+
-'<div class="ch"><div class="ct">🧠 Psychologist</div><div class="ci">UX Research</div></div>'+
-'</div></div></div></div>';
+s=`<h2 style="margin-bottom:24px">Org Chart</h2><div class="card" style="padding:30px">
+<div class="org-box" style="background:var(--accent);color:#fff"><div class="title">🎯 Dima</div><div class="sub" style="color:rgba(255,255,255,.7)">Заказчик</div></div>
+<div class="org-node"><div class="org-box"><div class="title">👔 CEO</div><div class="sub">Стратегия, координация</div></div>
+<div class="org-node">
+<div class="org-box"><div class="title">🔧 CTO</div><div class="sub">Техническое лидерство</div></div>
+<div class="org-node">${a.filter(x=>x.reports_to&&a.find(y=>y.id===x.reports_to&&y.name==='CTO')).map(x=>'<div class="org-box"><div class="title">👤 '+x.name+'</div><div class="sub">'+x.status+'</div></div>').join('')}</div>
+<div class="org-box"><div class="title">📋 Project Manager</div><div class="sub">Задачи, спринты</div></div>
+<div class="org-box"><div class="title">🔒 Security Architect</div><div class="sub">Безопасность</div></div>
+<div class="org-node">${a.filter(x=>x.reports_to&&a.find(y=>y.id===x.reports_to&&y.name==='Security Architect')).map(x=>'<div class="org-box"><div class="title">👤 '+x.name+'</div><div class="sub">'+x.status+'</div></div>').join('')}</div>
+<div class="org-box"><div class="title">📊 Data Analyst</div><div class="sub">Метрики</div></div>
+<div class="org-box"><div class="title">📢 Marketer</div><div class="sub">Маркетинг, PPC</div></div>
+<div class="org-box"><div class="title">🧠 Psychologist</div><div class="sub">UX Research</div></div>
+</div></div></div>`;
 break;
 case 'models':
 const m={};a.forEach(x=>{m[x.model]=(m[x.model]||0)+1;});
-s='<div class="cd"><h3>Модели</h3><table><thead><tr><th>Модель</th><th>Агентов</th><th>Тип</th></tr></thead><tbody>'+
-Object.entries(m).map(([k,v])=>'<tr><td>'+k+'</td><td>'+v+'</td><td><span class="b '+(k.includes(':free')?'g':'y')+'">'+(k.includes(':free')?'Free':'Paid')+'</span></td></tr>').join('')+
-'</tbody></table></div>';
+s=`<h2 style="margin-bottom:24px">Модели</h2><div class="card"><table><thead><tr><th>Модель</th><th>Агентов</th><th>Тип</th><th>Стоимость</th></tr></thead>
+<tbody>${Object.entries(m).map(([k,v])=>'<tr><td>'+k+'</td><td>'+v+'</td><td><span class="badge '+(k.includes(':free')?'green':'yellow')+'">'+(k.includes(':free')?'Free':'Paid')+'</span></td><td>'+(k.includes(':free')?'$0':'$0.10-3.00/M')+'</td></tr>').join('')}</tbody></table></div>`;
 break;
 case 'keys':
-s='<div class="cd"><h3>API Ключи ('+f.total_keys+')</h3><div style="display:grid;gap:10px">'+
-(f.keys||[]).map(k=>'<div class="kr"><span class="mk">'+k.masked+'</span><span class="b '+(k.is_active?'g':'y')+'">'+(k.is_active?'Активный':'Ожидание')+'</span><span>'+(k.requests_today||0)+' req | '+(k.errors_today||0)+' err</span></div>').join('')+
-'</div></div>';
+s=`<h2 style="margin-bottom:24px">API Ключи (${f.total_keys||0})</h2><div class="card">
+<div style="display:grid;gap:10px">
+${(f.keys||[]).map(k=>'<div class="key-row"><span class="mask">'+k.masked+'</span><span class="badge '+(k.is_active?'green':'yellow')+'">'+(k.is_active?'Активный':'Ожидание')+'</span><span style="color:var(--dim)">'+(k.requests_today||0)+' req | '+(k.errors_today||0)+' err</span></div>').join('')}
+</div>
+<div style="margin-top:16px;display:flex;gap:8px">
+<button onclick="switchKey()">Переключить ключ</button>
+</div></div>`;
 break;
 case 'departments':
-s='<div class="cd"><h3>Департаменты</h3><p style="color:var(--dim);margin-bottom:16px">Создание через API</p><div class="frm">'+
-'<label>Название</label><input id="dp-n" placeholder="Backend Department">'+
-'<label>Руководитель</label><input id="dp-l" placeholder="Backend Lead">'+
-'<label>Подчинённые</label><input id="dp-m" placeholder="Dev 1, Dev 2, Dev 3">'+
-'<button onclick="mkDept()">Создать департамент</button></div></div>';
+s=`<h2 style="margin-bottom:24px">Департаменты</h2><div class="card"><div class="form">
+<label>Название департамента</label><input id="dp-name" placeholder="Backend Department">
+<label>Руководитель</label><input id="dp-leader" placeholder="Backend Lead">
+<label>Подчинённые (через запятую)</label><input id="dp-members" placeholder="Dev 1, Dev 2, Dev 3">
+<button onclick="createDept()">Создать департамент</button></div></div>`;
 break;
 case 'runs':
-s='<div class="cd"><h3>Последние запуски</h3><table><thead><tr><th>Статус</th><th>Агент</th><th>Время</th><th>Токены</th><th>$</th></tr></thead><tbody>'+
-(r||[]).slice(0,20).map(x=>'<tr><td><span class="b '+(x.status==='completed'?'g':x.status==='failed'?'r':'y')+'">'+x.status+'</span></td><td>'+(x.agent_name||'—')+'</td><td>'+(x.finished_at||'').slice(11,19)+'</td><td>'+(x.input_tokens||0)+'→'+(x.output_tokens||0)+'</td><td>$'+((x.cost_usd||0).toFixed(4))+'</td></tr>').join('')+
-'</tbody></table></div>';
+s=`<h2 style="margin-bottom:24px">Запуски</h2><div class="card"><table><thead><tr><th>Статус</th><th>Агент</th><th>Время</th><th>Токены</th><th>$</th></tr></thead>
+<tbody>${(r||[]).slice(0,20).map(x=>'<tr><td><span class="badge '+(x.status==='completed'?'green':x.status==='failed'?'red':'yellow')+'">'+x.status+'</span></td><td>'+(x.agent_name||'—')+'</td><td>'+(x.finished_at||'').slice(11,19)+'</td><td>'+(x.input_tokens||0)+'→'+(x.output_tokens||0)+'</td><td>$'+((x.cost_usd||0).toFixed(4))+'</td></tr>').join('')}</tbody></table></div>`;
 break;
 case 'design':
-s='<div class="cd"><h3>Дизайн-система AXIOM</h3><p style="color:var(--dim);margin-bottom:16px">Tesla стиль • Dark theme • Минимализм</p>'+
-'<div class="gr g4">'+
-'<div class="st" style="text-align:center"><div style="background:#0a0a0f;width:60px;height:60px;border-radius:8px;margin:0 auto 8px;border:1px solid #1e1e2e"></div><div style="font-size:12px;color:var(--dim)">Background<br>#0a0a0f</div></div>'+
-'<div class="st" style="text-align:center"><div style="background:#12121a;width:60px;height:60px;border-radius:8px;margin:0 auto 8px;border:1px solid #1e1e2e"></div><div style="font-size:12px;color:var(--dim)">Card<br>#12121a</div></div>'+
-'<div class="st" style="text-align:center"><div style="background:#6366f1;width:60px;height:60px;border-radius:8px;margin:0 auto 8px"></div><div style="font-size:12px;color:var(--dim)">Accent<br>#6366f1</div></div>'+
-'<div class="st" style="text-align:center"><div style="background:#22c55e;width:60px;height:60px;border-radius:8px;margin:0 auto 8px"></div><div style="font-size:12px;color:var(--dim)">Success<br>#22c55e</div></div>'+
-'<div class="st" style="text-align:center"><div style="background:#ef4444;width:60px;height:60px;border-radius:8px;margin:0 auto 8px"></div><div style="font-size:12px;color:var(--dim)">Error<br>#ef4444</div></div>'+
-'<div class="st" style="text-align:center"><div style="background:#eab308;width:60px;height:60px;border-radius:8px;margin:0 auto 8px"></div><div style="font-size:12px;color:var(--dim)">Warning<br>#eab308</div></div>'+
-'<div class="st" style="text-align:center"><div style="background:#3b82f6;width:60px;height:60px;border-radius:8px;margin:0 auto 8px"></div><div style="font-size:12px;color:var(--dim)">Info<br>#3b82f6</div></div>'+
-'<div class="st" style="text-align:center"><div style="background:#e0e0e0;width:60px;height:60px;border-radius:8px;margin:0 auto 8px"></div><div style="font-size:12px;color:var(--dim)">Text<br>#e0e0e0</div></div>'+
-'</div></div>';
+s=`<h2 style="margin-bottom:24px">Дизайн-система AXIOM</h2>
+<div class="card"><h3>🎨 Цветовая палитра</h3>
+<div class="grid g4" style="margin-top:12px">
+${[['Background','#0a0a0f'],['Card','#12121a'],['Border','#1e1e2e'],['Accent','#6366f1'],['Success','#22c55e'],['Error','#ef4444'],['Warning','#eab308'],['Info','#3b82f6']].map(([n,c])=>'<div style="text-align:center"><div style="background:'+c+';width:80px;height:80px;border-radius:12px;margin:0 auto 8px;border:1px solid var(--border)"></div><div style="font-size:12px;color:var(--dim)">'+n+'<br>'+c+'</div></div>').join('')}
+</div></div>
+<div class="card" style="margin-top:16px"><h3>🧩 Компоненты</h3>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+<button>Primary</button>
+<button class="success">Success</button>
+<button class="danger">Danger</button>
+<span class="badge green">Active</span>
+<span class="badge yellow">Idle</span>
+<span class="badge red">Error</span>
+<span class="badge accent">Info</span>
+</div></div>`;
 break;
 case 'settings':
-s='<div class="cd"><h3>Настройки</h3><div class="frm">'+
-'<label>Проект</label><input value="AXIOM" readonly>'+
-'<label>Сервер</label><input value="ubuntu-4gb-hel1-8 (Linux 6.8.0)" readonly>'+
-'<label>Модель по умолчанию</label><input value="nvidia/nemotron-3-super-120b-a12b:free" readonly>'+
-'<label>Failover</label><input value="Включён ('+f.total_keys+' ключей)" readonly>'+
-'<label>Auto-commit</label><input value="Каждый час → GitHub" readonly>'+
-'<label>База данных</label><input value="SQLite (osya.db)" readonly>'+
-'<label>Безопасность</label><input value="Ключи в ~/.osya/secrets.json" readonly>'+
-'</div></div>';
+s=`<h2 style="margin-bottom:24px">Настройки</h2><div class="card"><div class="form">
+<label>Проект</label><input value="AXIOM" readonly>
+<label>Сервер</label><input value="ubuntu-4gb-hel1-8 (Linux 6.8.0)" readonly>
+<label>Модель по умолчанию</label><input value="nvidia/nemotron-3-super-120b-a12b:free" readonly>
+<label>Failover</label><input value="Включён ('+(f.total_keys||0)+' ключей)" readonly>
+<label>Auto-commit</label><input value="Каждый час → GitHub" readonly>
+<label>База данных</label><input value="SQLite (osya.db)" readonly>
+<label>Безопасность</label><input value="Ключи в ~/.osya/secrets.json" readonly>
+</div></div>`;
 break;
 }
-$('#mn').innerHTML=s;
+$('#pg-'+id).innerHTML=s;
 }
-async function mkDept(){
-const n=$('#dp-n').value,l=$('#dp-l').value,ms=$('#dp-m').value;
+async function createTask(){
+const title=$('#new-task-title').value,desc=$('#new-task-desc').value,agent=$('#new-task-agent').value;
+if(!title)return alert('Введите название');
+await fetch('/api/tasks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,description:desc,assigned_to:agent})});
+toast('Задача создана');await load();render('tasks');
+}
+async function createDept(){
+const n=$('#dp-name').value,l=$('#dp-leader').value,ms=$('#dp-members').value;
 if(!n||!l)return alert('Заполните поля');
 const mm=ms.split(',').map(s=>s.trim()).filter(Boolean).map(x=>({name:x,instructions:'Работает в '+n}));
 const res=await fetch('/api/agents/create-department',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({department_name:n,leader_name:l,leader_instructions:'Руководишь '+n,members:mm})});
-alert((await res.json()).message||'Создано');
-await ld();rn();
+toast((await res.json()).message||'Создано');await load();
 }
-nv();ld().then(rn);setInterval(()=>ld().then(rn),30000);
+async function switchKey(){
+await fetch('/api/failover/switch-next',{method:'POST'});
+toast('Ключ переключён');await load();render('keys');
+}
+function toast(msg){
+const d=document.createElement('div');d.className='toast';d.textContent=msg;
+document.body.appendChild(d);setTimeout(()=>d.remove(),3000);
+}
+load().then(()=>render('dashboard'));
+setInterval(()=>load().then(()=>{const active=document.querySelector('.sidebar a.on');if(active)render(active.id.replace('nav-',''));}),30000);
 </script>
 </body>
 </html>

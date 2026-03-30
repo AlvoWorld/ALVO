@@ -404,3 +404,28 @@ app.include_router(secrets_router)
 # Import and register agent factory router
 from api.agent_factory import router as agent_factory_router
 app.include_router(agent_factory_router)
+
+@app.get("/api/stats")
+async def get_stats():
+    import sqlite3
+    conn = sqlite3.connect("osya.db")
+    conn.row_factory = sqlite3.Row
+    agents = conn.execute("SELECT COUNT(*) as c FROM agents").fetchone()["c"]
+    running = conn.execute("SELECT COUNT(*) as c FROM agents WHERE status='running'").fetchone()["c"]
+    tasks = conn.execute("SELECT COUNT(*) as c FROM tasks").fetchone()["c"]
+    done = conn.execute("SELECT COUNT(*) as c FROM tasks WHERE status='done'").fetchone()["c"]
+    runs = conn.execute("SELECT COUNT(*) as c FROM runs").fetchone()["c"]
+    completed = conn.execute("SELECT COUNT(*) as c FROM runs WHERE status='completed'").fetchone()["c"]
+    failed = conn.execute("SELECT COUNT(*) as c FROM runs WHERE status='failed'").fetchone()["c"]
+    cost = conn.execute("SELECT COALESCE(SUM(cost_usd),0) as c FROM runs").fetchone()["c"]
+    tokens_in = conn.execute("SELECT COALESCE(SUM(input_tokens),0) as c FROM runs").fetchone()["c"]
+    tokens_out = conn.execute("SELECT COALESCE(SUM(output_tokens),0) as c FROM runs").fetchone()["c"]
+    conn.close()
+    return {
+        "agents_total": agents, "agents_running": running,
+        "tasks_total": tasks, "tasks_done": done,
+        "runs_total": runs, "runs_completed": completed, "runs_failed": failed,
+        "success_rate": round(completed/max(runs,1)*100, 1),
+        "total_cost_usd": round(cost, 4),
+        "total_tokens_in": tokens_in, "total_tokens_out": tokens_out
+    }
