@@ -29,3 +29,18 @@ config.yaml
 # Use examples instead
 config.yaml.example
 .env.example
+
+# Never commit agent reports (may contain secrets)
+*_heartbeat_*.md
+ceo_*.md
+ceo_*.txt
+pm_*.md
+compliance_officer_*.md
+cto_*.md
+maketolog_*.md
+technical_writer_*.md
+dba_*.md
+performance_*.md
+security_architect_*.md
+heartbeat_summary.json
+heartbeat_checklist
