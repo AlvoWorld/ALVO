@@ -1974,6 +1974,70 @@ function toast(msg,type){
 // ═══ LANG ═══
 function setLang(code,btn){if(btn){document.querySelectorAll('.lb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}toast('Язык: '+code,'info');}
 
+
+// ═══ PROCESS WINDOWS RENDERER ═══
+function renderProcWindows(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container || typeof AGENTS === 'undefined') return;
+  
+  container.innerHTML = AGENTS.map((a, i) => {
+    const statusClass = a.s === 'run' ? 'run' : a.s === 'err' ? 'err' : 'idle';
+    const statusText = a.s === 'run' ? 'RUNNING' : a.s === 'err' ? 'ERROR' : 'IDLE';
+    
+    // Get last run info (simulated for now)
+    const lastCmd = a.task || '—';
+    const tokens = a.tok || '0';
+    const cost = a.cost || '$0.00';
+    
+    return `
+      <div class="proc-card" onclick="openEditAgent(_apiData.agents[${i}]?.id || '${a.n}')" data-agent-idx="${i}">
+        <div class="head">
+          <div class="dot ${statusClass}"></div>
+          <div class="nm">${a.e} ${a.n}</div>
+          <div class="md">${(a.m || '').replace('claude-', '')}</div>
+          <div class="proc-actions">
+            <button onclick="event.stopPropagation(); openEditAgent(_apiData.agents[${i}]?.id || '${a.n}')" title="Edit">✏️</button>
+            <button class="del" onclick="event.stopPropagation(); deleteAgentFromCard('${a.n}', ${i})" title="Delete">🗑️</button>
+          </div>
+        </div>
+        <div class="body">
+          <div class="cmd">$ ${lastCmd.slice(0, 50)}</div>
+          <div class="out">Status: ${statusText}</div>
+          <div class="out">Tokens: ${tokens} | Cost: ${cost}</div>
+        </div>
+        <div class="foot">
+          <span>${a.adapter || 'OpenRouter'}</span>
+          <span>${statusText}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Delete agent from card
+async function deleteAgentFromCard(name, idx) {
+  if (!confirm('Удалить агента "' + name + '"?')) return;
+  
+  try {
+    const agent = _apiData.agents.find(a => a.name === name);
+    if (agent) {
+      await fetch('/api/agents/' + agent.id, { method: 'DELETE' });
+      toast('Агент удалён: ' + name, 'ok');
+      await fetchAPI();
+      renderProcWindows('mcAgents');
+    }
+  } catch(e) {
+    toast('Ошибка: ' + e.message, 'err');
+  }
+}
+
+// Patch renderMC to use process windows
+const _origRenderMC = window.renderMC;
+window.renderMC = function() {
+  if (typeof _origRenderMC === 'function') _origRenderMC();
+  renderProcWindows('mcAgents');
+};
+
 </script>
 
 <script>
@@ -2080,6 +2144,70 @@ fetchAPI().then(() => {
 
 // Auto-refresh every 30s
 setInterval(fetchAPI, 30000);
+
+// ═══ PROCESS WINDOWS RENDERER ═══
+function renderProcWindows(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container || typeof AGENTS === 'undefined') return;
+  
+  container.innerHTML = AGENTS.map((a, i) => {
+    const statusClass = a.s === 'run' ? 'run' : a.s === 'err' ? 'err' : 'idle';
+    const statusText = a.s === 'run' ? 'RUNNING' : a.s === 'err' ? 'ERROR' : 'IDLE';
+    
+    // Get last run info (simulated for now)
+    const lastCmd = a.task || '—';
+    const tokens = a.tok || '0';
+    const cost = a.cost || '$0.00';
+    
+    return `
+      <div class="proc-card" onclick="openEditAgent(_apiData.agents[${i}]?.id || '${a.n}')" data-agent-idx="${i}">
+        <div class="head">
+          <div class="dot ${statusClass}"></div>
+          <div class="nm">${a.e} ${a.n}</div>
+          <div class="md">${(a.m || '').replace('claude-', '')}</div>
+          <div class="proc-actions">
+            <button onclick="event.stopPropagation(); openEditAgent(_apiData.agents[${i}]?.id || '${a.n}')" title="Edit">✏️</button>
+            <button class="del" onclick="event.stopPropagation(); deleteAgentFromCard('${a.n}', ${i})" title="Delete">🗑️</button>
+          </div>
+        </div>
+        <div class="body">
+          <div class="cmd">$ ${lastCmd.slice(0, 50)}</div>
+          <div class="out">Status: ${statusText}</div>
+          <div class="out">Tokens: ${tokens} | Cost: ${cost}</div>
+        </div>
+        <div class="foot">
+          <span>${a.adapter || 'OpenRouter'}</span>
+          <span>${statusText}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Delete agent from card
+async function deleteAgentFromCard(name, idx) {
+  if (!confirm('Удалить агента "' + name + '"?')) return;
+  
+  try {
+    const agent = _apiData.agents.find(a => a.name === name);
+    if (agent) {
+      await fetch('/api/agents/' + agent.id, { method: 'DELETE' });
+      toast('Агент удалён: ' + name, 'ok');
+      await fetchAPI();
+      renderProcWindows('mcAgents');
+    }
+  } catch(e) {
+    toast('Ошибка: ' + e.message, 'err');
+  }
+}
+
+// Patch renderMC to use process windows
+const _origRenderMC = window.renderMC;
+window.renderMC = function() {
+  if (typeof _origRenderMC === 'function') _origRenderMC();
+  renderProcWindows('mcAgents');
+};
+
 </script>
 
 
@@ -2234,6 +2362,70 @@ document.addEventListener('keydown', function(e) {
 document.getElementById('modal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
+
+// ═══ PROCESS WINDOWS RENDERER ═══
+function renderProcWindows(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container || typeof AGENTS === 'undefined') return;
+  
+  container.innerHTML = AGENTS.map((a, i) => {
+    const statusClass = a.s === 'run' ? 'run' : a.s === 'err' ? 'err' : 'idle';
+    const statusText = a.s === 'run' ? 'RUNNING' : a.s === 'err' ? 'ERROR' : 'IDLE';
+    
+    // Get last run info (simulated for now)
+    const lastCmd = a.task || '—';
+    const tokens = a.tok || '0';
+    const cost = a.cost || '$0.00';
+    
+    return `
+      <div class="proc-card" onclick="openEditAgent(_apiData.agents[${i}]?.id || '${a.n}')" data-agent-idx="${i}">
+        <div class="head">
+          <div class="dot ${statusClass}"></div>
+          <div class="nm">${a.e} ${a.n}</div>
+          <div class="md">${(a.m || '').replace('claude-', '')}</div>
+          <div class="proc-actions">
+            <button onclick="event.stopPropagation(); openEditAgent(_apiData.agents[${i}]?.id || '${a.n}')" title="Edit">✏️</button>
+            <button class="del" onclick="event.stopPropagation(); deleteAgentFromCard('${a.n}', ${i})" title="Delete">🗑️</button>
+          </div>
+        </div>
+        <div class="body">
+          <div class="cmd">$ ${lastCmd.slice(0, 50)}</div>
+          <div class="out">Status: ${statusText}</div>
+          <div class="out">Tokens: ${tokens} | Cost: ${cost}</div>
+        </div>
+        <div class="foot">
+          <span>${a.adapter || 'OpenRouter'}</span>
+          <span>${statusText}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Delete agent from card
+async function deleteAgentFromCard(name, idx) {
+  if (!confirm('Удалить агента "' + name + '"?')) return;
+  
+  try {
+    const agent = _apiData.agents.find(a => a.name === name);
+    if (agent) {
+      await fetch('/api/agents/' + agent.id, { method: 'DELETE' });
+      toast('Агент удалён: ' + name, 'ok');
+      await fetchAPI();
+      renderProcWindows('mcAgents');
+    }
+  } catch(e) {
+    toast('Ошибка: ' + e.message, 'err');
+  }
+}
+
+// Patch renderMC to use process windows
+const _origRenderMC = window.renderMC;
+window.renderMC = function() {
+  if (typeof _origRenderMC === 'function') _origRenderMC();
+  renderProcWindows('mcAgents');
+};
+
 </script>
 
 
@@ -2381,6 +2573,70 @@ function addAgentButton() {
 }
 
 document.addEventListener('DOMContentLoaded', addAgentButton);
+
+// ═══ PROCESS WINDOWS RENDERER ═══
+function renderProcWindows(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container || typeof AGENTS === 'undefined') return;
+  
+  container.innerHTML = AGENTS.map((a, i) => {
+    const statusClass = a.s === 'run' ? 'run' : a.s === 'err' ? 'err' : 'idle';
+    const statusText = a.s === 'run' ? 'RUNNING' : a.s === 'err' ? 'ERROR' : 'IDLE';
+    
+    // Get last run info (simulated for now)
+    const lastCmd = a.task || '—';
+    const tokens = a.tok || '0';
+    const cost = a.cost || '$0.00';
+    
+    return `
+      <div class="proc-card" onclick="openEditAgent(_apiData.agents[${i}]?.id || '${a.n}')" data-agent-idx="${i}">
+        <div class="head">
+          <div class="dot ${statusClass}"></div>
+          <div class="nm">${a.e} ${a.n}</div>
+          <div class="md">${(a.m || '').replace('claude-', '')}</div>
+          <div class="proc-actions">
+            <button onclick="event.stopPropagation(); openEditAgent(_apiData.agents[${i}]?.id || '${a.n}')" title="Edit">✏️</button>
+            <button class="del" onclick="event.stopPropagation(); deleteAgentFromCard('${a.n}', ${i})" title="Delete">🗑️</button>
+          </div>
+        </div>
+        <div class="body">
+          <div class="cmd">$ ${lastCmd.slice(0, 50)}</div>
+          <div class="out">Status: ${statusText}</div>
+          <div class="out">Tokens: ${tokens} | Cost: ${cost}</div>
+        </div>
+        <div class="foot">
+          <span>${a.adapter || 'OpenRouter'}</span>
+          <span>${statusText}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Delete agent from card
+async function deleteAgentFromCard(name, idx) {
+  if (!confirm('Удалить агента "' + name + '"?')) return;
+  
+  try {
+    const agent = _apiData.agents.find(a => a.name === name);
+    if (agent) {
+      await fetch('/api/agents/' + agent.id, { method: 'DELETE' });
+      toast('Агент удалён: ' + name, 'ok');
+      await fetchAPI();
+      renderProcWindows('mcAgents');
+    }
+  } catch(e) {
+    toast('Ошибка: ' + e.message, 'err');
+  }
+}
+
+// Patch renderMC to use process windows
+const _origRenderMC = window.renderMC;
+window.renderMC = function() {
+  if (typeof _origRenderMC === 'function') _origRenderMC();
+  renderProcWindows('mcAgents');
+};
+
 </script>
 
 </body>
