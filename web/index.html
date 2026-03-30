@@ -2082,5 +2082,159 @@ fetchAPI().then(() => {
 setInterval(fetchAPI, 30000);
 </script>
 
+
+<!-- ═══ DIALOG MODAL ═══ -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="modalIcon">🤖</span>
+      <h3 id="modalTitle">Agent</h3>
+      <span class="pip pm" id="modalModel">model</span>
+      <button class="close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-tabs">
+      <a class="on" onclick="switchModalTab('terminal',this)">💻 Terminal</a>
+      <a onclick="switchModalTab('chat',this)">💬 Chat</a>
+      <a onclick="switchModalTab('tasks',this)">📋 Tasks</a>
+      <a onclick="switchModalTab('logs',this)">📜 Logs</a>
+      <a onclick="switchModalTab('config',this)">⚙️ Config</a>
+    </div>
+    <div class="modal-body" id="modalBody">
+      <div class="terminal" id="modalTerminal">
+        <div class="output">Loading...</div>
+      </div>
+    </div>
+    <div class="modal-input">
+      <input id="modalInput" placeholder="Введите команду или сообщение..." onkeydown="if(event.key==='Enter')sendModalInput()">
+      <button onclick="sendModalInput()">Отправить</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ═══ MODAL FUNCTIONS ═══
+let currentAgent = null;
+let modalTab = 'terminal';
+
+function openAgentModal(agentId) {
+  currentAgent = typeof AGENTS !== 'undefined' && AGENTS[agentId] ? AGENTS[agentId] : { n: 'Agent ' + agentId, e: '🤖', m: 'unknown' };
+  
+  document.getElementById('modalIcon').textContent = currentAgent.e || '🤖';
+  document.getElementById('modalTitle').textContent = currentAgent.n || 'Agent';
+  document.getElementById('modalModel').textContent = (currentAgent.m || currentAgent.model || '—').replace('claude-', '');
+  
+  document.getElementById('modal').classList.add('on');
+  switchModalTab('terminal');
+  loadAgentData(agentId);
+}
+
+async function loadAgentData(agentId) {
+  try {
+    const runs = await fetch('/api/runs').then(r => r.json());
+    const agentRuns = runs.filter(r => r.agent_name === (currentAgent.n || ''));
+    
+    let terminal = '<div class="output">═══ ' + (currentAgent.n || 'Agent') + ' ═══\n';
+    terminal += 'Model: ' + (currentAgent.m || '—') + '\n';
+    terminal += 'Status: ' + (currentAgent.s || 'idle') + '\n';
+    terminal += '═══════════════════\n\n';
+    
+    agentRuns.slice(0, 10).forEach(r => {
+      const icon = r.status === 'completed' ? '✓' : r.status === 'failed' ? '✗' : '⟳';
+      const cls = r.status === 'completed' ? 'ok' : r.status === 'failed' ? 'error' : 'cmd';
+      terminal += '<span class="' + cls + '">[' + (r.finished_at || '').slice(11, 19) + '] ' + icon + ' ' + r.status + '</span>\n';
+      if (r.error) terminal += '<span class="error">  ' + r.error.slice(0, 100) + '</span>\n';
+    });
+    
+    terminal += '</div>';
+    document.getElementById('modalTerminal').innerHTML = terminal;
+  } catch(e) {
+    document.getElementById('modalTerminal').innerHTML = '<div class="error">Error loading data: ' + e.message + '</div>';
+  }
+}
+
+function switchModalTab(tab, btn) {
+  modalTab = tab;
+  document.querySelectorAll('.modal-tabs a').forEach(a => a.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+  
+  const body = document.getElementById('modalBody');
+  
+  switch(tab) {
+    case 'terminal':
+      body.innerHTML = '<div class="terminal" id="modalTerminal"><div class="output">Terminal ready. Type a command...</div></div>';
+      if (currentAgent) loadAgentData(0);
+      break;
+    case 'chat':
+      body.innerHTML = '<div style="padding:20px;color:var(--t2)">💬 Chat with ' + (currentAgent.n || 'Agent') + '<br><br>Messages will appear here...</div>';
+      break;
+    case 'tasks':
+      body.innerHTML = '<div style="padding:20px;color:var(--t2)">📋 Tasks assigned to ' + (currentAgent.n || 'Agent') + '<br><br>Loading...</div>';
+      break;
+    case 'logs':
+      body.innerHTML = '<div class="terminal"><div class="output">📜 Logs\n\n[2026-03-30 03:00] Agent started\n[2026-03-30 03:01] Heartbeat OK\n[2026-03-30 03:05] Task assigned</div></div>';
+      break;
+    case 'config':
+      body.innerHTML = '<div style="padding:20px">⚙️ Configuration\n\nModel: ' + (currentAgent.m || '—') + '\nAdapter: OpenRouter\nHeartbeat: ' + (currentAgent.hb_int || 3600) + 's</div>';
+      break;
+  }
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('on');
+  currentAgent = null;
+}
+
+async function sendModalInput() {
+  const input = document.getElementById('modalInput');
+  const cmd = input.value.trim();
+  if (!cmd) return;
+  input.value = '';
+  
+  const terminal = document.getElementById('modalTerminal');
+  if (terminal) {
+    terminal.innerHTML += '<div><span class="prompt">$ </span><span class="cmd">' + cmd + '</span></div>';
+    terminal.innerHTML += '<div class="output">Executing...</div>';
+  }
+  
+  // If we have an agent, send as task
+  if (currentAgent && currentAgent.n) {
+    try {
+      const agents = await fetch('/api/agents').then(r => r.json());
+      const agent = agents.find(a => a.name === currentAgent.n);
+      if (agent) {
+        await fetch('/api/agents/' + agent.id + '/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task: cmd })
+        });
+        if (terminal) terminal.innerHTML += '<div class="ok">✓ Task sent to ' + currentAgent.n + '</div>';
+      }
+    } catch(e) {
+      if (terminal) terminal.innerHTML += '<div class="error">✗ Error: ' + e.message + '</div>';
+    }
+  }
+}
+
+// Override agent card clicks to open modal
+document.addEventListener('click', function(e) {
+  const agentCard = e.target.closest('[data-agent-id]');
+  if (agentCard) {
+    const id = parseInt(agentCard.dataset.agentId);
+    openAgentModal(id);
+  }
+});
+
+// Close modal on ESC
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+
+// Close modal on overlay click
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+
 </body>
 </html>
