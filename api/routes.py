@@ -357,8 +357,8 @@ def health():
 @app.get("/", response_class=HTMLResponse)
 def dashboard():
     from pathlib import Path
-    web_dir = Path(__file__).parent.parent / "web"
-    index_file = web_dir / "index.html"
+    web_dir = Path(__file__).parent.parent
+    index_file = web_dir / "dashboard.html"
     if index_file.exists():
         return index_file.read_text()
     return "<h1>OSYA Agents</h1><p>Web UI not found</p>"
@@ -372,12 +372,8 @@ def setup(database: Database, agent_runner: AgentRunner, sched: Scheduler):
     scheduler = sched
 
 # Import and register models router
-from api.models import router as models_router
-app.include_router(models_router)
 
 # Import and register keys router
-from api.keys import router as keys_router
-app.include_router(keys_router)
 
 # Free models list
 from core.free_models import FREE_MODELS, get_best_free_model
@@ -395,20 +391,12 @@ async def best_free_model():
     return get_best_free_model()
 
 # Import and register agent config router
-from api.agent_config import router as agent_config_router
-app.include_router(agent_config_router)
 
 # Import and register load balancer router
-from api.load_balancer import router as load_balancer_router
-app.include_router(load_balancer_router)
 
 # Import and register failover router
-from api.failover import router as failover_router
-app.include_router(failover_router)
 
 # Import and register secrets router
-from api.secrets import router as secrets_router
-app.include_router(secrets_router)
 
 # Import and register agent factory router
 from api.agent_factory import router as agent_factory_router
