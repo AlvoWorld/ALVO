@@ -940,85 +940,7 @@ select.inp{cursor:pointer;appearance:none}
 
 <script>
 // ═══ DATA ═══
-
-// ═══ API DATA LOADER ═══
-let AGENTS = [];
-let TASKS = [];
-
-async function loadAPIData() {
-  try {
-    const [agents, tasks, stats, runs] = await Promise.all([
-      fetch('/api/agents').then(r => r.json()),
-      fetch('/api/tasks').then(r => r.json()),
-      fetch('/api/stats').then(r => r.json()),
-      fetch('/api/runs').then(r => r.json())
-    ]);
-
-    // Map agents
-    AGENTS = agents.map((a, i) => ({
-      id: i,
-      e: a.name === 'CEO' ? '👔' : a.name.includes('CTO') ? '🔧' : a.name.includes('Dev') ? '💻' : 
-         a.name.includes('Marketer') ? '📢' : a.name.includes('Data') ? '📊' : 
-         a.name.includes('Security') || a.name.includes('SOC') ? '🔒' : 
-         a.name.includes('QA') ? '✅' : '🤖',
-      n: a.name,
-      m: (a.model || '').split('/').pop().replace(':free',''),
-      r: (a.instructions || '').slice(0, 30),
-      s: a.status === 'running' ? 'run' : a.status === 'error' ? 'err' : 'idle',
-      cost: '$0.00',
-      task: '—',
-      tok: '0',
-      tokN: 0,
-      req: 0,
-      up: '100%',
-      col: 'var(--c2)',
-      brd: 'var(--b2)',
-      adapter: 'OpenRouter',
-      model_cfg: a.model || '',
-      thinking: 'Auto',
-      status: a.status
-    }));
-
-    // Map tasks
-    TASKS = tasks.map((t, i) => ({
-      id: i + 1,
-      title: t.title || 'Без названия',
-      desc: t.description || '',
-      agentId: agents.findIndex(a => a.id === t.assigned_to) || 0,
-      prio: 'normal',
-      status: t.status === 'done' ? 'done' : t.status === 'pending' ? 'todo' : 'doing',
-      created: (t.created_at || '').slice(11, 16) || '—',
-      updated: (t.created_at || '').slice(11, 16) || '—',
-      unread: false,
-      subtasks: [],
-      comments: [],
-      runs: []
-    }));
-
-    // Update stats display
-    if (stats) {
-      const spendEl = document.getElementById('spendLv');
-      if (spendEl) spendEl.style.width = Math.min(100, (stats.total_cost_usd / 10) * 100) + '%';
-    }
-
-    // Re-render
-    if (typeof renderMC === 'function') renderMC();
-    if (typeof renderAgentsList === 'function') renderAgentsList();
-    
-    console.log('AXIOM API loaded:', AGENTS.length, 'agents,', TASKS.length, 'tasks');
-  } catch(e) {
-    console.error('API load error:', e);
-  }
-}
-
-// Auto-refresh
-setInterval(loadAPIData, 30000);
-
-// Load on init
-loadAPIData();
-
-
-// const AGENTS=[
+const AGENTS=[
   {id:0,e:'🧠',n:'CEO Agent',m:'claude-sonnet-4-5',r:'Strategic Lead',s:'think',cost:'$1.42',task:'Анализ KPI · стратотчёт',tok:'284K',tokN:284,req:1840,up:'99.7%',col:'rgba(167,139,250,.15)',brd:'rgba(167,139,250,.25)',
    adapter:'Claude Code',model_cfg:'claude-sonnet-4-5-20251001',thinking:'Auto',command:'claude',timeout:0,grace:15,heartbeat:true,hb_int:3600,can_create:true,can_assign:true,
    errs:[{t:'09:25',m:'Rate limit 429'},{t:'08:44',m:'Context overflow'}],tc:[180,210,190,250,220,270,284]},
@@ -1043,7 +965,7 @@ const MODEL_OPTIONS=['claude-opus-4-5-20251001','claude-sonnet-4-5-20251001','cl
 const THINKING_OPTIONS=['Auto','Low','Medium','High','None'];
 
 let taskId=100;
-// let TASKS=[
+let TASKS=[
   {id:1,title:'Оптимизация PPC: негативные ключи батч #9',desc:'Просмотреть нерелевантные запросы за 14 дней, добавить ≥20 негативных ключей.',agentId:1,prio:'high',status:'doing',created:'09:20',updated:'09:41',unread:true,
    subtasks:[{id:11,text:'Выгрузить запросы за 14 дней',done:true,err:null},{id:12,text:'Отфильтровать нерелевантные',done:true,err:null},{id:13,text:'Добавить в AUTO, BROAD, EXACT',done:false,err:null}],
    comments:[
@@ -2053,5 +1975,112 @@ function toast(msg,type){
 function setLang(code,btn){if(btn){document.querySelectorAll('.lb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}toast('Язык: '+code,'info');}
 
 </script>
+
+<script>
+// ═══ AXIOM API INTEGRATION ═══
+// Keeps original design working, adds live data overlay
+
+let _apiData = { agents: [], tasks: [], stats: {}, runs: [] };
+
+async function fetchAPI() {
+  try {
+    const [agents, tasks, stats, runs] = await Promise.all([
+      fetch('/api/agents').then(r => r.ok ? r.json() : []),
+      fetch('/api/tasks').then(r => r.ok ? r.json() : []),
+      fetch('/api/stats').then(r => r.ok ? r.json() : {}),
+      fetch('/api/runs').then(r => r.ok ? r.json() : [])
+    ]);
+    _apiData = { agents, tasks, stats, runs };
+    
+    // Update live counters
+    const healthEl = document.querySelector('[data-stat="agents"]');
+    if (healthEl) healthEl.textContent = agents.length;
+    
+    const runningEl = document.querySelector('[data-stat="running"]');
+    if (runningEl) runningEl.textContent = agents.filter(a => a.status === 'running').length;
+    
+    // Update tasks counter  
+    const tasksEl = document.querySelector('[data-stat="tasks"]');
+    if (tasksEl) tasksEl.textContent = tasks.length;
+    
+    return _apiData;
+  } catch(e) {
+    console.warn('API fetch error:', e);
+    return _apiData;
+  }
+}
+
+// Enhance goAgentDetail to use real data
+const _origGoAgentDetail = window.goAgentDetail;
+window.goAgentDetail = function(id) {
+  // Try original first
+  if (typeof _origGoAgentDetail === 'function') {
+    _origGoAgentDetail(id);
+    return;
+  }
+  // Fallback: show agent info
+  const agent = _apiData.agents[id];
+  if (agent) {
+    alert(agent.name + ' — ' + agent.status);
+  }
+};
+
+// Enhance createTask to use API
+const _origCreateTask = window.createTask;
+window.createTask = async function() {
+  const title = prompt('Название задачи:');
+  if (!title) return;
+  
+  const desc = prompt('Описание (опционально):') || '';
+  
+  try {
+    const result = await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, description: desc })
+    }).then(r => r.json());
+    
+    if (typeof toast === 'function') {
+      toast('Задача создана', 'ok');
+    } else {
+      alert('Задача создана!');
+    }
+    
+    await fetchAPI();
+    if (typeof renderBoard === 'function') renderBoard();
+  } catch(e) {
+    alert('Ошибка: ' + e.message);
+  }
+};
+
+// Add refresh button
+function addRefreshButton() {
+  const header = document.querySelector('.header') || document.querySelector('header');
+  if (header && !document.getElementById('refreshBtn')) {
+    const btn = document.createElement('button');
+    btn.id = 'refreshBtn';
+    btn.textContent = '↻';
+    btn.style.cssText = 'position:absolute;right:20px;top:50%;transform:translateY(-50%);background:var(--c);color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:16px';
+    btn.onclick = async () => {
+      btn.textContent = '⏳';
+      await fetchAPI();
+      btn.textContent = '✓';
+      setTimeout(() => btn.textContent = '↻', 1000);
+    };
+    header.style.position = 'relative';
+    header.appendChild(btn);
+  }
+}
+
+// Init
+fetchAPI().then(() => {
+  console.log('AXIOM API connected');
+  addRefreshButton();
+});
+
+// Auto-refresh every 30s
+setInterval(fetchAPI, 30000);
+</script>
+
 </body>
 </html>
