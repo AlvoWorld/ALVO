@@ -3,58 +3,43 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-venv/
 .venv/
+venv/
 
 # Database
 *.db
 *.db-shm
 *.db-wal
+data/
 
-# Logs
-*.log
+# Secrets (NEVER COMMIT)
+.env
+.env.*
+*.key
+*.pem
+config.yaml
 
 # IDE
 .vscode/
 .idea/
 
-# NEVER COMMIT SECRETS
-.env
-.env.*
-config.yaml
-*.key
-*.pem
-
-# Use examples instead
-config.yaml.example
-.env.example
-
-# Never commit agent reports (may contain secrets)
+# Agent reports (may contain secrets)
 *_heartbeat_*.md
+*_report_*.md
+*_decisions_*.md
+*_checklist
+*_tasks.md
+compliance/
 ceo_*.md
-ceo_*.txt
 pm_*.md
-compliance_officer_*.md
 cto_*.md
 maketolog_*.md
 technical_writer_*.md
 dba_*.md
 performance_*.md
 security_architect_*.md
-heartbeat_summary.json
-heartbeat_checklist
+soc_analyst_*.md
 
-# Never commit agent-generated reports
-compliance/
-*_decisions_*.md
-*_tasks.md
-*_report_*.md
-*_checklist
-performance_*.md
-performance_*.py
-load_test.js
-agent_config.json
-API_DOCUMENTATION.md
-CHANGELOG.md
-INSTALLATION_GUIDE.md
+# Use examples instead
+config.yaml.example
+.env.example
