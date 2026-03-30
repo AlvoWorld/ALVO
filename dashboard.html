@@ -2236,5 +2236,152 @@ document.getElementById('modal').addEventListener('click', function(e) {
 });
 </script>
 
+
+<script>
+// ═══ AGENT MANAGEMENT ═══
+let editingAgentId = null;
+
+function openAddAgent() {
+  populateReportsDropdown('newAgentReports');
+  document.getElementById('addAgentModal').classList.add('on');
+}
+
+function closeAddAgent() {
+  document.getElementById('addAgentModal').classList.remove('on');
+}
+
+async function createNewAgent() {
+  const name = document.getElementById('newAgentName').value.trim();
+  if (!name) return alert('Введите имя');
+  
+  const data = {
+    name: name,
+    model: document.getElementById('newAgentModel').value,
+    instructions: document.getElementById('newAgentInstructions').value,
+    reports_to: document.getElementById('newAgentReports').value || null,
+    heartbeat_sec: parseInt(document.getElementById('newAgentHB').value) || 0
+  };
+  
+  try {
+    await fetch('/api/agents', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    });
+    toast('Агент создан: ' + name, 'ok');
+    closeAddAgent();
+    await fetchAPI();
+    if (typeof renderMC === 'function') renderMC();
+    if (typeof renderAgentsList === 'function') renderAgentsList();
+  } catch(e) {
+    toast('Ошибка: ' + e.message, 'err');
+  }
+}
+
+function openEditAgent(agentId) {
+  editingAgentId = agentId;
+  const agent = _apiData.agents.find(a => a.id === agentId);
+  if (!agent) return;
+  
+  document.getElementById('editAgentTitle').textContent = '✏️ ' + agent.name;
+  document.getElementById('editAgentName').value = agent.name;
+  document.getElementById('editAgentModel').value = agent.model || 'nvidia/nemotron-3-super-120b-a12b:free';
+  document.getElementById('editAgentInstructions').value = agent.instructions || '';
+  document.getElementById('editAgentHB').value = agent.heartbeat_sec || 0;
+  
+  populateReportsDropdown('editAgentReports', agent.id);
+  document.getElementById('editAgentReports').value = agent.reports_to || '';
+  
+  document.getElementById('editAgentModal').classList.add('on');
+}
+
+function closeEditAgent() {
+  document.getElementById('editAgentModal').classList.remove('on');
+  editingAgentId = null;
+}
+
+async function saveEditAgent() {
+  if (!editingAgentId) return;
+  
+  const data = {
+    name: document.getElementById('editAgentName').value.trim(),
+    model: document.getElementById('editAgentModel').value,
+    instructions: document.getElementById('editAgentInstructions').value,
+    reports_to: document.getElementById('editAgentReports').value || null,
+    heartbeat_sec: parseInt(document.getElementById('editAgentHB').value) || 0
+  };
+  
+  try {
+    await fetch('/api/agents/' + editingAgentId, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    });
+    toast('Сохранено', 'ok');
+    closeEditAgent();
+    await fetchAPI();
+    if (typeof renderMC === 'function') renderMC();
+    if (typeof renderAgentsList === 'function') renderAgentsList();
+  } catch(e) {
+    toast('Ошибка: ' + e.message, 'err');
+  }
+}
+
+async function deleteCurrentAgent() {
+  if (!editingAgentId) return;
+  const agent = _apiData.agents.find(a => a.id === editingAgentId);
+  if (!confirm('Удалить агента "' + (agent?.name || '') + '"?')) return;
+  
+  try {
+    await fetch('/api/agents/' + editingAgentId, { method: 'DELETE' });
+    toast('Агент удалён', 'ok');
+    closeEditAgent();
+    await fetchAPI();
+    if (typeof renderMC === 'function') renderMC();
+    if (typeof renderAgentsList === 'function') renderAgentsList();
+  } catch(e) {
+    toast('Ошибка: ' + e.message, 'err');
+  }
+}
+
+function populateReportsDropdown(selectId, excludeId) {
+  const select = document.getElementById(selectId);
+  select.innerHTML = '<option value="">Никому (топ)</option>';
+  (_apiData.agents || []).forEach(a => {
+    if (a.id !== excludeId) {
+      const opt = document.createElement('option');
+      opt.value = a.id;
+      opt.textContent = a.name;
+      select.appendChild(opt);
+    }
+  });
+}
+
+// Override org chart click to edit agent
+const _origGoAgentDetail2 = window.goAgentDetail;
+window.goAgentDetail = function(id) {
+  // Find agent by index or id
+  const agent = _apiData.agents[id] || _apiData.agents.find(a => a.id === id);
+  if (agent) {
+    openEditAgent(agent.id);
+  }
+};
+
+// Add "Add Agent" button to agents page
+function addAgentButton() {
+  const agentsPage = document.getElementById('pg-agents') || document.querySelector('[data-page="agents"]');
+  if (agentsPage && !document.getElementById('addAgentBtn')) {
+    const btn = document.createElement('button');
+    btn.id = 'addAgentBtn';
+    btn.textContent = '➕ Добавить агента';
+    btn.style.cssText = 'margin-bottom:16px';
+    btn.onclick = openAddAgent;
+    agentsPage.insertBefore(btn, agentsPage.firstChild);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', addAgentButton);
+</script>
+
 </body>
 </html>
