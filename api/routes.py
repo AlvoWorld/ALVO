@@ -210,6 +210,15 @@ def get_comments(task_id: str):
 
 
 # Run endpoints
+@app.get("/api/runs")
+async def list_runs():
+    import sqlite3
+    conn = sqlite3.connect("osya.db")
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute("SELECT r.*, a.name as agent_name FROM runs r LEFT JOIN agents a ON r.agent_id=a.id ORDER BY r.started_at DESC LIMIT 50").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
 @app.get("/api/runs/{run_id}")
 def get_run(run_id: str):
     run = db.get_task(run_id)  # Note: should be get_run but we use task table
